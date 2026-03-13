@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dark Forest</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <div id="hud">
+    <div id="hud-age">Universe Age: 0 years</div>
+    <div id="hud-round">Round: 0 / 100</div>
+  </div>
+
+  <div id="tooltip" class="hidden"></div>
+
+  <div id="settings-toggle">⚙ Settings</div>
+  <div id="settings-panel" class="hidden">
+    <h3>Universe Settings</h3>
+    <div class="setting-group">
+      <label>Radius (light years)</label>
+      <input type="range" id="s-radius" min="10000" max="1000000000" value="1000000" />
+      <span id="v-radius">1,000,000</span>
+    </div>
+    <div class="setting-group">
+      <label>Number of Galaxies</label>
+      <input type="range" id="s-galaxies" min="10000" max="1000000000" value="10000" />
+      <span id="v-galaxies">10,000</span>
+    </div>
+    <div class="setting-group">
+      <label>Civilization Probability</label>
+      <input type="range" id="s-civ-prob" min="0" max="100" value="30" />
+      <span id="v-civ-prob">0.3</span>
+    </div>
+
+    <h3>Time Settings</h3>
+    <div class="setting-group">
+      <label>Time Slice (years)</label>
+      <input type="range" id="s-time-slice" min="1" max="1000000000000" value="100000" />
+      <span id="v-time-slice">100,000</span>
+    </div>
+    <div class="setting-group">
+      <label>Real Time per Slice (s)</label>
+      <input type="range" id="s-real-time" min="0.1" max="100" value="5" step="0.1" />
+      <span id="v-real-time">5</span>
+    </div>
+    <div class="setting-group">
+      <label>Total Slices</label>
+      <input type="range" id="s-total-slices" min="1" max="10000" value="100" />
+      <span id="v-total-slices">100</span>
+    </div>
+
+    <div class="setting-actions">
+      <button id="btn-new-game">New Game</button>
+      <button id="btn-pause">Pause</button>
+      <button id="btn-resume">Resume</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
