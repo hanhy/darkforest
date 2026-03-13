@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, GameConfig } from './config';
+import { GameConfig } from './config';
 import { Universe } from './core/Universe';
 import { TimeEngine } from './core/TimeEngine';
 import { Camera } from './render/Camera';
@@ -25,6 +25,9 @@ function startGame(config: GameConfig): void {
   // Init universe
   universe.init(config);
 
+  // Clear any connection line from previous game
+  renderer.clearConnection();
+
   // Center camera
   camera.centerOn(canvas.width, canvas.height, config.universe.radius);
 
@@ -35,6 +38,8 @@ function startGame(config: GameConfig): void {
 
     if (universe.finished) {
       timeEngine.pause();
+      // Game ends: keep the final state, do NOT reset
+      hud.update(universe);
     }
   });
 
@@ -45,7 +50,10 @@ function startGame(config: GameConfig): void {
 // --- Settings callbacks ---
 settings.onNewGame = (config) => startGame(config);
 settings.onPause = () => timeEngine?.pause();
-settings.onResume = () => timeEngine?.start();
+settings.onResume = () => {
+  if (universe.finished) return; // Don't resume a finished game
+  timeEngine?.start();
+};
 
 // --- Tooltip on hover ---
 canvas.addEventListener('mousemove', (e) => {
@@ -65,12 +73,31 @@ canvas.addEventListener('mouseleave', () => {
   tooltip.hide();
 });
 
+// --- Click to connect two galaxies or clear ---
+canvas.addEventListener('click', (e) => {
+  // Ignore if camera was just dragged
+  if (camera.isDragging) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const galaxy = renderer.findGalaxyAt(universe, mx, my);
+
+  if (galaxy) {
+    renderer.selectGalaxy(galaxy);
+  } else {
+    // Click on empty space: clear the connection
+    renderer.clearConnection();
+  }
+});
+
 // --- Render loop ---
 function frame(): void {
   renderer.draw(universe);
   requestAnimationFrame(frame);
 }
 
-// --- Start ---
-startGame(DEFAULT_CONFIG);
+// --- Start: show settings panel and wait for user to confirm ---
+settings.show();
 requestAnimationFrame(frame);

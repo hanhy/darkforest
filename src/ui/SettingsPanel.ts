@@ -53,7 +53,6 @@ export class SettingsPanel {
       },
       galaxy: {
         evolveSpeed: DEFAULT_CONFIG.galaxy.evolveSpeed,
-        evolveProbability: DEFAULT_CONFIG.galaxy.evolveProbability,
       },
       time: {
         sliceYears: parseInt((document.getElementById('s-time-slice') as HTMLInputElement).value),
@@ -61,6 +60,10 @@ export class SettingsPanel {
         totalSlices: parseInt((document.getElementById('s-total-slices') as HTMLInputElement).value),
       },
     };
+  }
+
+  show(): void {
+    this.panel.classList.remove('hidden');
   }
 
   private formatInt(n: number): string {

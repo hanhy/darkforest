@@ -6,7 +6,6 @@ export interface GameConfig {
   };
   galaxy: {
     evolveSpeed: number;
-    evolveProbability: number;
   };
   time: {
     sliceYears: number;
@@ -23,7 +22,6 @@ export const DEFAULT_CONFIG: GameConfig = {
   },
   galaxy: {
     evolveSpeed: 0.1,
-    evolveProbability: 0.5,
   },
   time: {
     sliceYears: 100_000,

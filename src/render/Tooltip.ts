@@ -20,7 +20,7 @@ export class Tooltip {
       lines.push(`No civilization`);
     }
 
-    lines.push(`<span style="color:#666">x: ${galaxy.x.toFixed(0)}, y: ${galaxy.y.toFixed(0)}</span>`);
+    lines.push(`<span style="color:#666">x: ${galaxy.x.toFixed(0)}, y: ${galaxy.y.toFixed(0)}, z: ${galaxy.z.toFixed(0)}</span>`);
 
     this.el.innerHTML = lines.join('<br>');
     this.el.style.left = `${screenX + 16}px`;

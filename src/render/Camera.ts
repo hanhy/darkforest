@@ -1,7 +1,12 @@
 export class Camera {
-  offsetX: number = 0;
-  offsetY: number = 0;
-  scale: number = 1;
+  // Rotation angles (radians)
+  rotX: number = 0.3;   // pitch
+  rotY: number = 0;     // yaw
+  zoom: number = 1;
+
+  // Screen offset for panning
+  panX: number = 0;
+  panY: number = 0;
 
   private canvas: HTMLCanvasElement;
   private dragging: boolean = false;
@@ -17,33 +22,29 @@ export class Camera {
     this.canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-
-      // Zoom towards mouse position
-      const rect = this.canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      const worldX = (mouseX - this.offsetX) / this.scale;
-      const worldY = (mouseY - this.offsetY) / this.scale;
-
-      this.scale *= zoomFactor;
-
-      this.offsetX = mouseX - worldX * this.scale;
-      this.offsetY = mouseY - worldY * this.scale;
+      this.zoom *= zoomFactor;
     }, { passive: false });
 
     this.canvas.addEventListener('mousedown', (e) => {
-      this.dragging = true;
-      this.lastMouseX = e.clientX;
-      this.lastMouseY = e.clientY;
+      // Only rotate on left button drag
+      if (e.button === 0) {
+        this.dragging = true;
+        this.lastMouseX = e.clientX;
+        this.lastMouseY = e.clientY;
+      }
     });
 
     window.addEventListener('mousemove', (e) => {
       if (!this.dragging) return;
       const dx = e.clientX - this.lastMouseX;
       const dy = e.clientY - this.lastMouseY;
-      this.offsetX += dx;
-      this.offsetY += dy;
+
+      this.rotY += dx * 0.005;
+      this.rotX += dy * 0.005;
+
+      // Clamp pitch to avoid flipping
+      this.rotX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rotX));
+
       this.lastMouseX = e.clientX;
       this.lastMouseY = e.clientY;
     });
@@ -53,28 +54,43 @@ export class Camera {
     });
   }
 
-  /** Convert world coordinates to screen coordinates */
-  worldToScreen(wx: number, wy: number): [number, number] {
-    return [
-      wx * this.scale + this.offsetX,
-      wy * this.scale + this.offsetY,
-    ];
+  get isDragging(): boolean {
+    return this.dragging;
   }
 
-  /** Convert screen coordinates to world coordinates */
-  screenToWorld(sx: number, sy: number): [number, number] {
-    return [
-      (sx - this.offsetX) / this.scale,
-      (sy - this.offsetY) / this.scale,
-    ];
+  /** Project 3D world coordinates to 2D screen coordinates */
+  project(wx: number, wy: number, wz: number): [number, number, number] {
+    // Rotate around Y axis (yaw)
+    const cosY = Math.cos(this.rotY);
+    const sinY = Math.sin(this.rotY);
+    let x1 = wx * cosY + wz * sinY;
+    const y1 = wy;
+    let z1 = -wx * sinY + wz * cosY;
+
+    // Rotate around X axis (pitch)
+    const cosX = Math.cos(this.rotX);
+    const sinX = Math.sin(this.rotX);
+    const x2 = x1;
+    const y2 = y1 * cosX - z1 * sinX;
+    const z2 = y1 * sinX + z1 * cosX;
+
+    // Orthographic projection with zoom
+    const cx = this.canvas.width / 2;
+    const cy = this.canvas.height / 2;
+
+    const sx = cx + x2 * this.zoom + this.panX;
+    const sy = cy - y2 * this.zoom + this.panY;
+
+    return [sx, sy, z2];
   }
 
   /** Center the camera on the universe */
   centerOn(canvasWidth: number, canvasHeight: number, universeRadius: number): void {
-    // Fit the universe in the viewport with some padding
     const padding = 0.8;
-    this.scale = (Math.min(canvasWidth, canvasHeight) * padding) / (universeRadius * 2);
-    this.offsetX = canvasWidth / 2;
-    this.offsetY = canvasHeight / 2;
+    this.zoom = (Math.min(canvasWidth, canvasHeight) * padding) / (universeRadius * 2);
+    this.panX = 0;
+    this.panY = 0;
+    this.rotX = 0.3;
+    this.rotY = 0;
   }
 }

@@ -1,6 +1,6 @@
 import { GameConfig } from '../config';
 import { Galaxy } from './Galaxy';
-import { randomRange, chance } from '../utils/random';
+import { chance } from '../utils/random';
 
 export class Universe {
   galaxies: Galaxy[] = [];
@@ -21,17 +21,24 @@ export class Universe {
     this.galaxies = [];
 
     const { galaxyCount, civProbability } = config.universe;
-    const { evolveSpeed, evolveProbability } = config.galaxy;
+    const { evolveSpeed } = config.galaxy;
 
     for (let i = 0; i < galaxyCount; i++) {
-      // Distribute galaxies in a circular universe
-      const angle = Math.random() * Math.PI * 2;
-      const dist = Math.sqrt(Math.random()) * this.radius; // sqrt for uniform distribution
-      const x = Math.cos(angle) * dist;
-      const y = Math.sin(angle) * dist;
-      const hasCiv = chance(civProbability);
+      // Uniform distribution inside a sphere
+      const u = Math.random();
+      const v = Math.random();
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(2 * v - 1);
+      const r = Math.cbrt(Math.random()) * this.radius; // cbrt for uniform 3D distribution
 
-      this.galaxies.push(new Galaxy(x, y, hasCiv, evolveSpeed, evolveProbability));
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.sin(phi) * Math.sin(theta);
+      const z = r * Math.cos(phi);
+
+      const hasCiv = chance(civProbability);
+      // Each civilization gets a random evolve probability between 0.01 and 0.5
+      const civEvolveProb = hasCiv ? 0.01 + Math.random() * 0.49 : 0;
+      this.galaxies.push(new Galaxy(x, y, z, hasCiv, evolveSpeed, civEvolveProb));
     }
   }
 
