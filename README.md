@@ -195,11 +195,79 @@ distance = √[(x₁-x₂)² + (y₁-y₂)² + (z₁-z₂)²]
 
 ## 🚀 后续计划 / Roadmap
 
-- [ ] 星系碰撞检测 / Galaxy collision detection
-- [ ] 文明间通信模拟 / Inter-civilization communication simulation
-- [ ] 黑暗森林打击机制 / Dark Forest strike mechanism
-- [ ] 保存/加载宇宙状态 / Save/load universe state
-- [ ] 导出演化视频 / Export evolution video
+### 核心玩法 / Core Gameplay
+
+- [ ] **猜疑链系统** / Chain of Suspicion  
+  文明间无法判断对方善恶意图，自动产生敌意累积  
+  Civilizations cannot judge each other's intentions, automatically accumulating hostility
+
+- [ ] **技术爆炸机制** / Technology Explosion  
+  低等级文明有概率突然跳跃式升级（参考三体）  
+  Low-level civilizations have probability of sudden leapfrog advancement
+
+- [ ] **黑暗森林打击** / Dark Forest Strike  
+  高等级文明可清理暴露的低等文明（坐标广播→清理）  
+  High-level civs can clean exposed low-level civs (coordinate broadcast → cleanup)
+
+- [ ] **信号传播系统** / Signal Propagation  
+  电磁波以光速传播，文明可主动/被动发射信号  
+  EM waves propagate at light speed, civs can emit signals actively/passively
+
+### 宇宙生态 / Universe Ecosystem
+
+- [ ] **文明隐藏/隐身** / Civilization Stealth  
+  低等级文明可选择"静默"降低被探测概率  
+  Low-level civs can choose "silence" to reduce detection probability
+
+- [ ] **星际战争模拟** / Interstellar Warfare  
+  光粒打击、二向箔降维等武器系统  
+  Photoid strikes, dual-vector foil dimension reduction weapons
+
+- [ ] **文明联盟/敌对** / Civilization Alliances/Hostilities  
+  基于距离、等级、历史的动态关系系统  
+  Dynamic relationship system based on distance, level, history
+
+### 功能增强 / Feature Enhancements
+
+- [ ] **星系碰撞检测** / Galaxy Collision Detection  
+  近距离星系可能发生合并或资源争夺  
+  Close galaxies may merge or compete for resources
+
+- [ ] **保存/加载宇宙状态** / Save/Load Universe State  
+  JSON 格式存档，支持分享种子代码  
+  JSON save format, support sharing seed codes
+
+- [ ] **文明灭绝追踪** / Civilization Extinction Tracker  
+  统计已灭绝文明数量、原因、存活时间  
+  Track extinct civ count, causes, survival duration
+
+- [ ] **导出演化视频** / Export Evolution Video  
+  录制文明演化过程，支持 MP4/GIF  
+  Record evolution process, export to MP4/GIF
+
+### 可视化优化 / Visualization
+
+- [ ] **文明间通信模拟** / Inter-civilization Communication Simulation  
+  可视化信号传播路径和延迟效果  
+  Visualize signal propagation paths and latency
+
+- [ ] **超新星爆发** / Supernova Explosions  
+  恒星死亡时产生壮观视觉效果  
+  Spectacular visual effects when stars die
+
+- [ ] **黑洞/引力透镜** / Black Holes / Gravitational Lensing  
+  高质量天体对光线弯曲效果  
+  Light bending effects from massive objects
+
+### 成就系统 / Achievement System
+
+- [ ] **宇宙历史统计** / Universe History Statistics  
+  最长寿文明、最快技术爆炸、最大规模战争等  
+  Longest-lived civ, fastest tech explosion, largest war, etc.
+
+- [ ] **特殊事件日志** / Special Event Log  
+  记录所有重大宇宙事件（打击、爆炸、联盟）  
+  Log all major universe events (strikes, explosions, alliances)
 
 ---
 
