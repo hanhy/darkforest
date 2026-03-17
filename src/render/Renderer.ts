@@ -137,12 +137,21 @@ export class Renderer {
     } else {
       const level = galaxy.civilizationLevel;
       const t = Math.min(level / 10, 1);
-      const radius = 2 + t * 3;
-      const [r, g, b] = spectrumColor(level);
-      const alpha = (0.6 + t * 0.4) * depthFactor;
+      const radius = galaxy.getRadius();
+      const [r, g, b, baseAlpha] = galaxy.getColor();
+      const alpha = baseAlpha * depthFactor;
 
-      // Glow effect for high-level civilizations
-      if (level >= 5) {
+      // Stealth mode: subtle pulsing effect
+      if (galaxy.isStealth) {
+        const pulse = 0.5 + 0.3 * Math.sin(Date.now() * 0.002);
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * pulse * 0.3})`;
+        ctx.fill();
+      }
+
+      // Glow effect for high-level civilizations (not in stealth)
+      if (galaxy.shouldShowGlow()) {
         ctx.beginPath();
         ctx.arc(sx, sy, radius * 2.5, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.15})`;
@@ -153,6 +162,15 @@ export class Renderer {
       ctx.arc(sx, sy, radius, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
       ctx.fill();
+      
+      // Stealth indicator: small ring around stealth civs
+      if (galaxy.isStealth) {
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(100, 150, 255, ${alpha * 0.5})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
     }
   }
 

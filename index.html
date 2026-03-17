@@ -12,7 +12,10 @@
   <div id="hud">
     <div id="hud-age">Universe Age: 0 years</div>
     <div id="hud-round">Round: 0 / 100</div>
+    <div id="hud-stats" style="display:none; margin-top:8px; font-size:12px; color:#888;"></div>
   </div>
+
+  <div id="hud-df-toggle" style="position:fixed;top:80px;right:16px;background:rgba(0,0,0,0.7);border:1px solid #333;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;z-index:100;">🌑 Dark Forest: OFF</div>
 
   <div id="tooltip" class="hidden"></div>
 
@@ -52,6 +55,21 @@
       <span id="v-total-slices">100</span>
     </div>
 
+    <h3>Dark Forest</h3>
+    <div class="setting-actions">
+      <button id="btn-toggle-df" style="flex:1;padding:8px;background:#222;color:#ccc;border:1px solid #444;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">🌑 Dark Forest: OFF</button>
+    </div>
+    <div id="save-info" style="font-size:11px;color:#666;margin:8px 0;display:none;"></div>
+    <div class="setting-actions">
+      <button id="btn-save" style="flex:1;padding:8px;background:#222;color:#ccc;border:1px solid #444;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">💾 Save</button>
+      <button id="btn-load" style="flex:1;padding:8px;background:#222;color:#ccc;border:1px solid #444;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">📂 Load</button>
+    </div>
+    <div class="setting-actions">
+      <button id="btn-export" style="flex:1;padding:8px;background:#222;color:#ccc;border:1px solid #444;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">📤 Export</button>
+      <button id="btn-import" style="flex:1;padding:8px;background:#222;color:#ccc;border:1px solid #444;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">📥 Import</button>
+    </div>
+
+    <h3>Game Control</h3>
     <div class="setting-actions">
       <button id="btn-new-game">New Game</button>
       <button id="btn-pause">Pause</button>

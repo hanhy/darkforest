@@ -17,6 +17,7 @@ const hud = new HUD();
 const settings = new SettingsPanel();
 
 let timeEngine: TimeEngine;
+let currentConfig: GameConfig;
 
 function startGame(config: GameConfig): void {
   // Stop previous
@@ -24,6 +25,10 @@ function startGame(config: GameConfig): void {
 
   // Init universe
   universe.init(config);
+  currentConfig = config;
+  
+  // Update settings panel with current universe
+  settings.setUniverse(universe, config);
 
   // Clear any connection line from previous game
   renderer.clearConnection();
@@ -53,6 +58,10 @@ settings.onPause = () => timeEngine?.pause();
 settings.onResume = () => {
   if (universe.finished) return; // Don't resume a finished game
   timeEngine?.start();
+};
+settings.onToggleDarkForest = (enabled) => {
+  universe.enableDarkForest = enabled;
+  hud.update(universe);
 };
 
 // --- Tooltip on hover ---

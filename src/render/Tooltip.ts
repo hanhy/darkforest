@@ -11,10 +11,15 @@ export class Tooltip {
     const lines: string[] = [];
 
     if (galaxy.hasCivilization) {
-      lines.push(`<b>Civilization</b>`);
+      const stealthIndicator = galaxy.isStealth ? ' 👻' : '';
+      lines.push(`<b>Civilization${stealthIndicator}</b>`);
       lines.push(`Level: ${galaxy.civilizationLevel.toFixed(1)} / 10`);
       lines.push(`Evolve Speed: ${galaxy.evolveSpeed}`);
-      lines.push(`Evolve Prob: ${galaxy.evolveProbability}`);
+      lines.push(`Evolve Prob: ${(galaxy.evolveProbability * 100).toFixed(0)}%`);
+      
+      if (galaxy.isStealth) {
+        lines.push(`<span style="color:#6af">👻 Stealth Mode Active</span>`);
+      }
     } else {
       lines.push(`<b>Empty Galaxy</b>`);
       lines.push(`No civilization`);

@@ -1,12 +1,19 @@
 import { GameConfig, DEFAULT_CONFIG } from '../config';
+import { Universe } from '../core/Universe';
+import { SaveManager } from '../utils/SaveManager';
 
 export class SettingsPanel {
   private panel: HTMLElement;
   private toggle: HTMLElement;
+  private saveManager: SaveManager = new SaveManager();
 
   onNewGame: ((config: GameConfig) => void) | null = null;
   onPause: (() => void) | null = null;
   onResume: (() => void) | null = null;
+  onToggleDarkForest: ((enabled: boolean) => void) | null = null;
+
+  private currentUniverse: Universe | null = null;
+  private currentConfig: GameConfig | null = null;
 
   constructor() {
     this.panel = document.getElementById('settings-panel')!;
@@ -34,6 +41,88 @@ export class SettingsPanel {
     document.getElementById('btn-resume')!.addEventListener('click', () => {
       this.onResume?.();
     });
+    
+    // Dark Forest toggle
+    const dfToggle = document.getElementById('btn-toggle-df');
+    if (dfToggle) {
+      dfToggle.addEventListener('click', () => {
+        if (this.currentUniverse) {
+          this.currentUniverse.enableDarkForest = !this.currentUniverse.enableDarkForest;
+          this.updateDFButton();
+          this.onToggleDarkForest?.(this.currentUniverse.enableDarkForest);
+        }
+      });
+    }
+    
+    // Save/Load buttons
+    document.getElementById('btn-save')!.addEventListener('click', () => {
+      if (this.currentUniverse && this.currentConfig) {
+        this.saveManager.save(this.currentUniverse, this.currentConfig);
+        alert('Game saved!');
+      }
+    });
+    
+    document.getElementById('btn-load')!.addEventListener('click', () => {
+      if (this.currentUniverse) {
+        const result = this.saveManager.load(this.currentUniverse);
+        if (result.success) {
+          alert('Game loaded!');
+          this.onPause?.();
+        } else {
+          alert('No save found!');
+        }
+      }
+    });
+    
+    document.getElementById('btn-export')!.addEventListener('click', () => {
+      if (this.currentUniverse && this.currentConfig) {
+        this.saveManager.exportToFile(this.currentUniverse, this.currentConfig);
+      }
+    });
+    
+    document.getElementById('btn-import')!.addEventListener('click', async () => {
+      if (this.currentUniverse) {
+        const result = await this.saveManager.importFromFile(this.currentUniverse);
+        if (result.success && result.data) {
+          this.currentConfig = result.data.config;
+          this.onPause?.();
+          alert('Save imported!');
+        } else {
+          alert('Failed to import save!');
+        }
+      }
+    });
+    
+    // Update save info display
+    this.updateSaveInfo();
+  }
+
+  private updateSaveInfo(): void {
+    const info = this.saveManager.getSaveInfo();
+    const saveInfoEl = document.getElementById('save-info');
+    if (saveInfoEl && info) {
+      const date = new Date(info.timestamp);
+      saveInfoEl.textContent = `Last save: ${date.toLocaleString()} (Round ${info.round})`;
+      saveInfoEl.style.display = 'block';
+    } else if (saveInfoEl) {
+      saveInfoEl.style.display = 'none';
+    }
+  }
+
+  private updateDFButton(): void {
+    const btn = document.getElementById('btn-toggle-df');
+    if (btn && this.currentUniverse) {
+      btn.textContent = this.currentUniverse.enableDarkForest 
+        ? '🌑 Dark Forest: ON' 
+        : '🌑 Dark Forest: OFF';
+    }
+  }
+
+  setUniverse(universe: Universe, config: GameConfig): void {
+    this.currentUniverse = universe;
+    this.currentConfig = config;
+    this.updateDFButton();
+    this.updateSaveInfo();
   }
 
   private bindSlider(sliderId: string, displayId: string, format: (v: number) => string): void {

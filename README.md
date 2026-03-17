@@ -134,16 +134,18 @@ darkforest/
 │   ├── core/
 │   │   ├── Universe.ts     # 宇宙引擎（星系管理、时间演化） / Universe engine (galaxy management, time evolution)
 │   │   ├── Galaxy.ts       # 星系类（3D 坐标、文明属性） / Galaxy class (3D coordinates, civ attributes)
-│   │   └── TimeEngine.ts   # 时间引擎（暂停/继续/速度控制） / Time engine (pause/resume/speed control)
+│   │   ├── TimeEngine.ts   # 时间引擎（暂停/继续/速度控制） / Time engine (pause/resume/speed control)
+│   │   └── DarkForest.ts   # 黑暗森林系统（猜疑链、技术爆炸、隐身） / Dark Forest system
 │   ├── render/
 │   │   ├── Renderer.ts     # Canvas 渲染器（3D 投影、光谱着色） / Canvas renderer (3D projection, spectrum coloring)
 │   │   ├── Camera.ts       # 3D 相机（平移、缩放、投影） / 3D camera (pan, zoom, projection)
 │   │   └── Tooltip.ts      # 悬浮提示 / Hover tooltip
 │   ├── ui/
-│   │   ├── HUD.ts          # 抬头显示（宇宙年龄、轮次） / Heads-up display (age, round)
-│   │   └── SettingsPanel.ts # 参数设置面板 / Configuration panel
+│   │   ├── HUD.ts          # 抬头显示（宇宙年龄、轮次、统计） / Heads-up display (age, round, stats)
+│   │   └── SettingsPanel.ts # 参数设置面板（存档管理） / Configuration panel (save management)
 │   └── utils/
-│       └── random.ts       # 随机工具函数 / Random utility functions
+│       ├── random.ts       # 随机工具函数 / Random utility functions
+│       └── SaveManager.ts  # 存档管理器（保存/加载/导入导出） / Save manager
 ├── index.html              # 主页面 / Main page
 ├── style.css               # 样式 / Styles
 └── vite.config.ts          # Vite 配置 / Vite configuration
@@ -195,15 +197,29 @@ distance = √[(x₁-x₂)² + (y₁-y₂)² + (z₁-z₂)²]
 
 ## 🚀 后续计划 / Roadmap
 
-### 核心玩法 / Core Gameplay
+### ✅ 已完成 / Completed
 
-- [ ] **猜疑链系统** / Chain of Suspicion  
+- [x] **猜疑链系统** / Chain of Suspicion  
   文明间无法判断对方善恶意图，自动产生敌意累积  
   Civilizations cannot judge each other's intentions, automatically accumulating hostility
 
-- [ ] **技术爆炸机制** / Technology Explosion  
+- [x] **技术爆炸机制** / Technology Explosion  
   低等级文明有概率突然跳跃式升级（参考三体）  
-  Low-level civilizations have probability of sudden leapfrog advancement
+  Low-level civilizations have probability of sudden leapfrog advancement (1-3 levels)
+
+- [x] **文明隐藏/隐身** / Civilization Stealth  
+  低等级文明可选择"静默"降低被探测概率，受威胁时自动启用  
+  Low-level civs can choose "silence" to reduce detection, auto-enabled when threatened
+
+- [x] **保存/加载宇宙状态** / Save/Load Universe State  
+  JSON 格式存档，支持本地存储和文件导入导出  
+  JSON save format, support localStorage and file import/export
+
+- [x] **黑暗森林统计** / Dark Forest Statistics  
+  实时显示技术爆炸次数、隐身文明数量、高猜疑关系对数  
+  Real-time stats: tech explosions, stealth civs, high suspicion pairs
+
+### 核心玩法 / Core Gameplay
 
 - [ ] **黑暗森林打击** / Dark Forest Strike  
   高等级文明可清理暴露的低等文明（坐标广播→清理）  
@@ -214,10 +230,6 @@ distance = √[(x₁-x₂)² + (y₁-y₂)² + (z₁-z₂)²]
   EM waves propagate at light speed, civs can emit signals actively/passively
 
 ### 宇宙生态 / Universe Ecosystem
-
-- [ ] **文明隐藏/隐身** / Civilization Stealth  
-  低等级文明可选择"静默"降低被探测概率  
-  Low-level civs can choose "silence" to reduce detection probability
 
 - [ ] **星际战争模拟** / Interstellar Warfare  
   光粒打击、二向箔降维等武器系统  
@@ -232,10 +244,6 @@ distance = √[(x₁-x₂)² + (y₁-y₂)² + (z₁-z₂)²]
 - [ ] **星系碰撞检测** / Galaxy Collision Detection  
   近距离星系可能发生合并或资源争夺  
   Close galaxies may merge or compete for resources
-
-- [ ] **保存/加载宇宙状态** / Save/Load Universe State  
-  JSON 格式存档，支持分享种子代码  
-  JSON save format, support sharing seed codes
 
 - [ ] **文明灭绝追踪** / Civilization Extinction Tracker  
   统计已灭绝文明数量、原因、存活时间  
