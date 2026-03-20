@@ -6,6 +6,7 @@ import { Renderer } from './render/Renderer';
 import { Tooltip } from './render/Tooltip';
 import { HUD } from './ui/HUD';
 import { SettingsPanel } from './ui/SettingsPanel';
+import { audioManager } from './audio/AudioManager';
 
 // --- Init ---
 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -36,6 +37,10 @@ function startGame(config: GameConfig): void {
   // Center camera
   camera.centerOn(canvas.width, canvas.height, config.universe.radius);
 
+  // Initialize audio on first user interaction
+  audioManager.init();
+  audioManager.startAmbient();
+
   // Setup time engine
   timeEngine = new TimeEngine(config.time.realTimePerSlice, () => {
     universe.tick();
@@ -63,6 +68,15 @@ settings.onToggleDarkForest = (enabled) => {
   universe.enableDarkForest = enabled;
   hud.update(universe);
 };
+
+// --- Audio toggle ---
+const audioToggle = document.getElementById('hud-audio-toggle');
+if (audioToggle) {
+  audioToggle.addEventListener('click', () => {
+    const enabled = audioManager.toggle();
+    audioToggle.textContent = enabled ? '🔊 Audio: ON' : '🔇 Audio: OFF';
+  });
+}
 
 // --- Tooltip on hover ---
 canvas.addEventListener('mousemove', (e) => {

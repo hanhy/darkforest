@@ -1,6 +1,7 @@
 import { GameConfig, DEFAULT_CONFIG } from '../config';
 import { Universe } from '../core/Universe';
 import { SaveManager } from '../utils/SaveManager';
+import { audioManager } from '../audio/AudioManager';
 
 export class SettingsPanel {
   private panel: HTMLElement;
@@ -30,6 +31,24 @@ export class SettingsPanel {
     this.bindSlider('s-time-slice', 'v-time-slice', (v) => this.formatInt(v));
     this.bindSlider('s-real-time', 'v-real-time', (v) => v.toString());
     this.bindSlider('s-total-slices', 'v-total-slices', (v) => this.formatInt(v));
+    this.bindSlider('s-audio-volume', 'v-audio-volume', (v) => v + '%');
+    
+    // Audio controls
+    const audioToggle = document.getElementById('btn-toggle-audio');
+    if (audioToggle) {
+      audioToggle.addEventListener('click', () => {
+        const enabled = audioManager.toggle();
+        audioToggle.textContent = enabled ? '🔊 Audio: ON' : '🔇 Audio: OFF';
+      });
+    }
+    
+    // Audio volume slider
+    const volumeSlider = document.getElementById('s-audio-volume') as HTMLInputElement;
+    if (volumeSlider) {
+      volumeSlider.addEventListener('input', () => {
+        audioManager.setVolume(parseFloat(volumeSlider.value) / 100);
+      });
+    }
 
     // Buttons
     document.getElementById('btn-new-game')!.addEventListener('click', () => {

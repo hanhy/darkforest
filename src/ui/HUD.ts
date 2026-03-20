@@ -37,6 +37,8 @@ export class HUD {
         ? '🌑 Dark Forest: ON' 
         : '🌑 Dark Forest: OFF';
     }
+    
+    // Update audio button state (initialized in main.ts)
   }
 
   private formatNumber(n: number): string {

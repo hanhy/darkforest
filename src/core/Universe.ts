@@ -3,6 +3,7 @@ import { Galaxy } from './Galaxy';
 import { chance } from '../utils/random';
 import { DarkForestSystem, TechExplosionEvent } from './DarkForestSystem';
 import { DarkForestStrike, StrikeEvent } from './DarkForestStrike';
+import { audioManager } from '../audio/AudioManager';
 
 export class Universe {
   galaxies: Galaxy[] = [];
@@ -88,6 +89,8 @@ export class Universe {
         const explosion = this.darkForest.checkTechExplosion(galaxy, this.round);
         if (explosion) {
           this.stats.techExplosions++;
+          // Play tech explosion sound
+          audioManager.playTechExplosion();
         }
       }
       
@@ -187,6 +190,8 @@ export class Universe {
         // Check if broadcaster should broadcast coordinates
         const broadcast = strikeSystem.checkBroadcast(broadcaster, target, relation, this.round);
         if (broadcast) {
+          // Play broadcast sound
+          audioManager.playBroadcast();
           // Broadcast happened, now check if broadcaster also strikes
           strikeSystem.checkStrike(broadcaster, target, this.round, false);
         }
@@ -195,6 +200,15 @@ export class Universe {
     
     // Process broadcasts - other civs may receive and strike
     const newStrikes = strikeSystem.processBroadcasts(this.galaxies, this.round);
+    
+    // Play sounds for strikes
+    newStrikes.forEach(strike => {
+      audioManager.playStrike(strike.method);
+      if (strike.success) {
+        // Small delay before extinction sound
+        setTimeout(() => audioManager.playExtinction(), 200);
+      }
+    });
     
     // Store recent strikes for display
     if (newStrikes.length > 0) {
