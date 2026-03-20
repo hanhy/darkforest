@@ -141,7 +141,12 @@ export class SettingsPanel {
     this.currentUniverse = universe;
     this.currentConfig = config;
     this.updateDFButton();
+    this.updateAudioButton();
     this.updateSaveInfo();
+  }
+  
+  private updateAudioButton(): void {
+    // Audio button state is managed by audioManager directly
   }
 
   private bindSlider(sliderId: string, displayId: string, format: (v: number) => string): void {

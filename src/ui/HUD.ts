@@ -4,13 +4,11 @@ export class HUD {
   private ageEl: HTMLElement;
   private roundEl: HTMLElement;
   private statsEl: HTMLElement | null;
-  private darkForestToggle: HTMLElement | null;
 
   constructor() {
     this.ageEl = document.getElementById('hud-age')!;
     this.roundEl = document.getElementById('hud-round')!;
     this.statsEl = document.getElementById('hud-stats');
-    this.darkForestToggle = document.getElementById('hud-df-toggle');
   }
 
   update(universe: Universe): void {
@@ -30,15 +28,6 @@ export class HUD {
     } else if (this.statsEl) {
       this.statsEl.style.display = 'none';
     }
-    
-    // Update toggle button
-    if (this.darkForestToggle) {
-      this.darkForestToggle.textContent = universe.enableDarkForest 
-        ? '🌑 Dark Forest: ON' 
-        : '🌑 Dark Forest: OFF';
-    }
-    
-    // Update audio button state (initialized in main.ts)
   }
 
   private formatNumber(n: number): string {

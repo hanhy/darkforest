@@ -69,15 +69,6 @@ settings.onToggleDarkForest = (enabled) => {
   hud.update(universe);
 };
 
-// --- Audio toggle ---
-const audioToggle = document.getElementById('hud-audio-toggle');
-if (audioToggle) {
-  audioToggle.addEventListener('click', () => {
-    const enabled = audioManager.toggle();
-    audioToggle.textContent = enabled ? '🔊 Audio: ON' : '🔇 Audio: OFF';
-  });
-}
-
 // --- Tooltip on hover ---
 canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect();
