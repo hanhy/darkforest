@@ -117,18 +117,26 @@ export class Universe {
     }
   }
 
-  /** Auto-manage stealth mode for civilizations */
+  /** Auto-manage stealth mode for civilizations (optimized) */
   private autoManageStealth(): void {
-    for (const galaxy of this.galaxies) {
-      if (!galaxy.hasCivilization || galaxy.civilizationLevel >= 5) continue;
-      
-      // Check if any nearby civ has high suspicion
-      const relations = this.darkForest.getHighSuspicionPairs(30);
+    // Only check low-level civs (<5) for stealth
+    const lowLevelCivs = this.galaxies.filter(
+      g => g.hasCivilization && g.civilizationLevel < 5 && !g.isExtinct
+    );
+    
+    // Get high suspicion pairs once
+    const relations = this.darkForest.getHighSuspicionPairs(30);
+    
+    // Create a set of threatened galaxy IDs for O(1) lookup
+    const threatenedIds = new Set<string>();
+    for (const r of relations) {
+      threatenedIds.add(r.civ1Id);
+      threatenedIds.add(r.civ2Id);
+    }
+    
+    for (const galaxy of lowLevelCivs) {
       const galaxyId = `${galaxy.x.toFixed(0)},${galaxy.y.toFixed(0)},${galaxy.z.toFixed(0)}`;
-      
-      const isThreatened = relations.some(r => 
-        r.civ1Id === galaxyId || r.civ2Id === galaxyId
-      );
+      const isThreatened = threatenedIds.has(galaxyId);
       
       if (isThreatened && !this.darkForest.isStealth(galaxy)) {
         // Enable stealth when threatened
@@ -145,16 +153,35 @@ export class Universe {
     const relations = this.darkForest;
     const strikeSystem = this.darkForestStrike;
     
-    // Check for coordinate broadcasts
-    const civs = this.galaxies.filter(g => g.hasCivilization);
-    for (let i = 0; i < civs.length; i++) {
-      for (let j = 0; j < civs.length; j++) {
-        if (i === j) continue;
+    // Performance optimization: Only check high-level civs (>=4) for broadcasting
+    // And limit the number of checks per round
+    const potentialBroadcasters = this.galaxies.filter(
+      g => g.hasCivilization && g.civilizationLevel >= 4
+    );
+    
+    // Limit checks per round to prevent lag (max 20 checks)
+    const maxChecksPerRound = 20;
+    let checksThisRound = 0;
+    
+    for (const broadcaster of potentialBroadcasters) {
+      if (checksThisRound >= maxChecksPerRound) break;
+      
+      // Find nearby civilizations to potentially broadcast
+      const nearbyCivs = this.galaxies.filter(g => 
+        g.hasCivilization && 
+        g !== broadcaster && 
+        g.civilizationLevel >= 0 &&
+        !strikeSystem.isExtinct(g) &&
+        g.distanceTo(broadcaster) < 100000 // Only check within 100k ly
+      );
+      
+      // Check a few random targets instead of all
+      const targetsToCheck = nearbyCivs.slice(0, 3);
+      
+      for (const target of targetsToCheck) {
+        if (checksThisRound >= maxChecksPerRound) break;
+        checksThisRound++;
         
-        const broadcaster = civs[i];
-        const target = civs[j];
-        
-        // Get relation between them
         const relation = relations.getRelation(broadcaster, target);
         
         // Check if broadcaster should broadcast coordinates

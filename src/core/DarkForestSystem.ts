@@ -50,14 +50,30 @@ export class DarkForestSystem {
     return this.relations.get(key) || null;
   }
 
-  /** Update suspicion between civilizations based on distance and level */
+  /** Update suspicion between civilizations based on distance and level (optimized) */
   updateSuspicion(galaxies: Galaxy[], round: number, maxDistance: number = 100000): void {
-    const civs = galaxies.filter(g => g.hasCivilization && g.civilizationLevel >= 0);
+    const civs = galaxies.filter(g => g.hasCivilization && g.civilizationLevel >= 0 && !g.isExtinct);
     
-    for (let i = 0; i < civs.length; i++) {
-      for (let j = i + 1; j < civs.length; j++) {
-        const g1 = civs[i];
-        const g2 = civs[j];
+    // Performance optimization: limit checks per round
+    const maxChecks = 100;
+    let checks = 0;
+    
+    // Only check civs that are close to each other
+    // Sample a subset instead of all pairs
+    const sampleSize = Math.min(civs.length, 50);
+    const sampledCivs: Galaxy[] = [];
+    
+    for (let i = 0; i < civs.length && sampledCivs.length < sampleSize; i++) {
+      if (Math.random() < sampleSize / civs.length) {
+        sampledCivs.push(civs[i]);
+      }
+    }
+    
+    for (let i = 0; i < sampledCivs.length && checks < maxChecks; i++) {
+      for (let j = i + 1; j < sampledCivs.length && checks < maxChecks; j++) {
+        checks++;
+        const g1 = sampledCivs[i];
+        const g2 = sampledCivs[j];
         const dist = g1.distanceTo(g2);
         
         // Only interact if within range
@@ -91,6 +107,15 @@ export class DarkForestSystem {
         relation.lastContact = round;
         
         this.relations.set(key, relation);
+      }
+    }
+    
+    // Clean up old relations (older than 50 rounds) to prevent memory leak
+    if (this.relations.size > 500) {
+      for (const [key, relation] of this.relations.entries()) {
+        if (round - relation.lastContact > 50) {
+          this.relations.delete(key);
+        }
       }
     }
   }
