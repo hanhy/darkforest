@@ -10,7 +10,11 @@ export class Tooltip {
   show(galaxy: Galaxy, screenX: number, screenY: number): void {
     const lines: string[] = [];
 
-    if (galaxy.hasCivilization) {
+    if (galaxy.isExtinct) {
+      lines.push(`<b>☠️ Extinct Civilization</b>`);
+      lines.push(`<span style="color:#888">Destroyed by Dark Forest Strike</span>`);
+      lines.push(`<span style="color:#666">x: ${galaxy.x.toFixed(0)}, y: ${galaxy.y.toFixed(0)}, z: ${galaxy.z.toFixed(0)}</span>`);
+    } else if (galaxy.hasCivilization) {
       const stealthIndicator = galaxy.isStealth ? ' 👻' : '';
       lines.push(`<b>Civilization${stealthIndicator}</b>`);
       lines.push(`Level: ${galaxy.civilizationLevel.toFixed(1)} / 10`);

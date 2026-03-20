@@ -23,6 +23,8 @@ export class HUD {
         <div>🔥 Tech Explosions: ${universe.stats.techExplosions}</div>
         <div>👻 Stealth Civs: ${universe.stats.stealthCivs}</div>
         <div>⚠️ High Suspicion: ${universe.stats.highSuspicionPairs}</div>
+        <div>💥 Strikes: ${universe.stats.strikes}</div>
+        <div>☠️ Extinct Civs: ${universe.stats.extinctCivs}</div>
       `;
       this.statsEl.style.display = 'block';
     } else if (this.statsEl) {

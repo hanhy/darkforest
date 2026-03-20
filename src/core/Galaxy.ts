@@ -10,6 +10,8 @@ export class Galaxy {
   evolveProbability: number;
   /** Stealth mode (for dark forest mechanics) */
   isStealth: boolean = false;
+  /** Extinct due to dark forest strike */
+  isExtinct: boolean = false;
 
   constructor(
     x: number,
@@ -47,8 +49,13 @@ export class Galaxy {
     );
   }
 
-  /** Get display color considering stealth mode */
+  /** Get display color considering stealth and extinct mode */
   getColor(): [number, number, number, number] {
+    // Extinct civilization: gray, dim
+    if (this.isExtinct) {
+      return [80, 80, 80, 0.3];
+    }
+    
     if (!this.hasCivilization) {
       return [100, 100, 100, 0.6];
     }
@@ -93,7 +100,7 @@ export class Galaxy {
 
   /** Whether this galaxy should show glow effect */
   shouldShowGlow(): boolean {
-    return this.hasCivilization && this.civilizationLevel >= 5 && !this.isStealth;
+    return this.hasCivilization && !this.isExtinct && this.civilizationLevel >= 5 && !this.isStealth;
   }
 
   /** Get display radius */

@@ -112,6 +112,52 @@ Open `http://localhost:5173` in your browser to start the simulation.
 | 每片真实时间 / Real Time per Slice | 5 秒 / seconds | 每个时间片消耗的真实时间 / Real-world seconds per time slice |
 | 总时间片数 / Total Slices | 100 | 模拟总轮次 / Total simulation rounds |
 
+### 黑暗森林机制 / Dark Forest Mechanics
+
+| 机制 / Mechanic | 触发条件 / Trigger | 效果 / Effect |
+|-----------------|-------------------|---------------|
+| 猜疑链 / Chain of Suspicion | 文明间距离近 + 等级差 | 自动累积敌意 / Auto-accumulate hostility |
+| 技术爆炸 / Technology Explosion | 低等级文明 (0-4) | 跳跃 1-3 级 / Jump 1-3 levels |
+| 隐身模式 / Stealth Mode | 受威胁时自动启用 | 探测概率 -90% / Detection -90% |
+| 坐标广播 / Coordinate Broadcast | ≥4 级文明，高猜疑 | 暴露目标坐标 / Expose target coordinates |
+| 清理打击 / Cleanup Strike | 收到广播或直接威胁 | 可能消灭目标 / May destroy target |
+
+### 🌌 黑暗森林玩法 / Dark Forest Gameplay
+
+**核心法则**：宇宙是黑暗森林，每个文明都是带枪的猎人。
+
+**Core Rule**: The universe is a dark forest. Every civilization is an armed hunter.
+
+#### 生存策略 / Survival Strategy
+
+1. **保持沉默** — 低等级文明（<5 级）应尽快进入隐身模式
+   **Stay Silent** — Low-level civs (<5) should enter stealth ASAP
+
+2. **技术爆炸** — 利用早期高概率快速升级
+   **Tech Explosion** — Use early high probability to level up fast
+
+3. **谨慎广播** — 暴露别人坐标会吸引其他猎手
+   **Careful Broadcasting** — Exposing others attracts other hunters
+
+4. **清理威胁** — 高等级文明应主动清理潜在威胁
+   **Clean Threats** — High-level civs should proactively clean threats
+
+#### 打击流程 / Strike Flow
+
+```
+高等级文明发现目标
+        ↓
+评估威胁（等级差、距离、猜疑度）
+        ↓
+选择：广播坐标 OR 直接打击
+        ↓
+其他文明收到广播 → 可能加入打击
+        ↓
+目标被消灭（灰色显示）或 打击失败
+```
+
+---
+
 ### 文明等级 / Civilization Levels
 
 | 等级 / Level | 颜色 / Color | 说明 / Description |
@@ -122,6 +168,20 @@ Open `http://localhost:5173` in your browser to start the simulation.
 | 5-6 | 🟢 绿色 / Green | 高等文明（带光晕） / Advanced civilization (with glow) |
 | 7-8 | 🔵 蓝色 / Blue | 先进文明（带光晕） / Highly advanced civilization (with glow) |
 | 9-10 | 🟣 紫色 / Violet | 神级文明（带光晕） / God-like civilization (with glow) |
+
+### 黑暗森林打击 / Dark Forest Strike
+
+| 打击方式 / Method | 最低等级 / Min Level | 说明 / Description |
+|-------------------|---------------------|-------------------|
+| 常规清理 / Cleaning | 3 | 基础打击方式 / Basic cleanup |
+| 光粒 / Photoid | 8 | 高能粒子打击 / High-energy particle strike |
+| 二向箔 / Dual-Vector Foil | 8 | 维度降维打击 / Dimension reduction weapon |
+
+| 等级 / Level | 打击概率 / Strike Probability | 说明 / Description |
+|--------------|------------------------------|-------------------|
+| 3-4 | 1-2% | 极罕见 / Very rare |
+| 5-7 | 5-20% | 中等 / Moderate |
+| 8-10 | 35-70% | 高频 / High frequency |
 
 ---
 
@@ -135,7 +195,8 @@ darkforest/
 │   │   ├── Universe.ts     # 宇宙引擎（星系管理、时间演化） / Universe engine (galaxy management, time evolution)
 │   │   ├── Galaxy.ts       # 星系类（3D 坐标、文明属性） / Galaxy class (3D coordinates, civ attributes)
 │   │   ├── TimeEngine.ts   # 时间引擎（暂停/继续/速度控制） / Time engine (pause/resume/speed control)
-│   │   └── DarkForest.ts   # 黑暗森林系统（猜疑链、技术爆炸、隐身） / Dark Forest system
+│   │   ├── DarkForestSystem.ts   # 黑暗森林系统（猜疑链、技术爆炸、隐身） / Dark Forest system
+│   │   └── DarkForestStrike.ts   # 打击系统（坐标广播、清理打击） / Strike system (broadcast, cleanup)
 │   ├── render/
 │   │   ├── Renderer.ts     # Canvas 渲染器（3D 投影、光谱着色） / Canvas renderer (3D projection, spectrum coloring)
 │   │   ├── Camera.ts       # 3D 相机（平移、缩放、投影） / 3D camera (pan, zoom, projection)
@@ -218,6 +279,10 @@ distance = √[(x₁-x₂)² + (y₁-y₂)² + (z₁-z₂)²]
 - [x] **黑暗森林统计** / Dark Forest Statistics  
   实时显示技术爆炸次数、隐身文明数量、高猜疑关系对数  
   Real-time stats: tech explosions, stealth civs, high suspicion pairs
+
+- [x] **黑暗森林打击系统** / Dark Forest Strike System (v1.2.0)  
+  高等级文明可广播坐标并发起清理打击，支持光粒/二向箔等武器  
+  High-level civs can broadcast coordinates and initiate cleanup strikes with various weapons
 
 ### 核心玩法 / Core Gameplay
 

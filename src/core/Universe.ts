@@ -2,6 +2,7 @@ import { GameConfig } from '../config';
 import { Galaxy } from './Galaxy';
 import { chance } from '../utils/random';
 import { DarkForestSystem, TechExplosionEvent } from './DarkForestSystem';
+import { DarkForestStrike, StrikeEvent } from './DarkForestStrike';
 
 export class Universe {
   galaxies: Galaxy[] = [];
@@ -15,6 +16,9 @@ export class Universe {
   /** Dark Forest system for civilization interactions */
   darkForest: DarkForestSystem = new DarkForestSystem();
   
+  /** Dark Forest strike system for coordinate broadcasts and cleanup */
+  darkForestStrike: DarkForestStrike = new DarkForestStrike();
+  
   /** Enable dark forest mechanics */
   enableDarkForest: boolean = true;
   
@@ -23,7 +27,12 @@ export class Universe {
     techExplosions: 0,
     stealthCivs: 0,
     highSuspicionPairs: 0,
+    strikes: 0,
+    extinctCivs: 0,
   };
+  
+  /** Recent strike events for display */
+  recentStrikes: StrikeEvent[] = [];
 
   init(config: GameConfig): void {
     this.radius = config.universe.radius;
@@ -34,7 +43,9 @@ export class Universe {
     this.finished = false;
     this.galaxies = [];
     this.darkForest = new DarkForestSystem();
-    this.stats = { techExplosions: 0, stealthCivs: 0, highSuspicionPairs: 0 };
+    this.darkForestStrike = new DarkForestStrike();
+    this.stats = { techExplosions: 0, stealthCivs: 0, highSuspicionPairs: 0, strikes: 0, extinctCivs: 0 };
+    this.recentStrikes = [];
 
     const { galaxyCount, civProbability } = config.universe;
     const { evolveSpeed } = config.galaxy;
@@ -83,11 +94,19 @@ export class Universe {
       // Auto-enable stealth for low-level civs with high suspicion
       this.autoManageStealth();
       
+      // Check for coordinate broadcasts and strikes
+      this.processDarkForestStrikes();
+      
       // Update stats
       this.stats.stealthCivs = this.galaxies.filter(g => 
         this.darkForest.isStealth(g)
       ).length;
       this.stats.highSuspicionPairs = this.darkForest.getHighSuspicionPairs().length;
+      
+      // Strike stats
+      const strikeStats = this.darkForestStrike.getStats();
+      this.stats.strikes = strikeStats.totalStrikes;
+      this.stats.extinctCivs = strikeStats.extinctCivilizations;
     }
 
     this.round++;
@@ -121,6 +140,41 @@ export class Universe {
     }
   }
 
+  /** Process Dark Forest strikes - broadcasts and cleanup */
+  private processDarkForestStrikes(): void {
+    const relations = this.darkForest;
+    const strikeSystem = this.darkForestStrike;
+    
+    // Check for coordinate broadcasts
+    const civs = this.galaxies.filter(g => g.hasCivilization);
+    for (let i = 0; i < civs.length; i++) {
+      for (let j = 0; j < civs.length; j++) {
+        if (i === j) continue;
+        
+        const broadcaster = civs[i];
+        const target = civs[j];
+        
+        // Get relation between them
+        const relation = relations.getRelation(broadcaster, target);
+        
+        // Check if broadcaster should broadcast coordinates
+        const broadcast = strikeSystem.checkBroadcast(broadcaster, target, relation, this.round);
+        if (broadcast) {
+          // Broadcast happened, now check if broadcaster also strikes
+          strikeSystem.checkStrike(broadcaster, target, this.round, false);
+        }
+      }
+    }
+    
+    // Process broadcasts - other civs may receive and strike
+    const newStrikes = strikeSystem.processBroadcasts(this.galaxies, this.round);
+    
+    // Store recent strikes for display
+    if (newStrikes.length > 0) {
+      this.recentStrikes = strikeSystem.getRecentStrikes(5);
+    }
+  }
+
   /** Export universe state for saving */
   export(): object {
     return {
@@ -144,8 +198,10 @@ export class Universe {
         evolveSpeed: g.evolveSpeed,
         evolveProbability: g.evolveProbability,
         isStealth: (g as any).isStealth || false,
+        isExtinct: (g as any).isExtinct || false,
       })),
       darkForest: this.darkForest.export(),
+      darkForestStrike: this.darkForestStrike.export(),
       stats: this.stats,
     };
   }
@@ -159,7 +215,8 @@ export class Universe {
     this.round = data.state.round;
     this.finished = data.state.finished;
     this.enableDarkForest = data.state.enableDarkForest;
-    this.stats = data.stats || { techExplosions: 0, stealthCivs: 0, highSuspicionPairs: 0 };
+    this.stats = data.stats || { techExplosions: 0, stealthCivs: 0, highSuspicionPairs: 0, strikes: 0, extinctCivs: 0 };
+    this.recentStrikes = [];
     
     // Rebuild galaxies
     this.galaxies = data.galaxies.map((g: any) => {
@@ -168,10 +225,14 @@ export class Universe {
       if (g.isStealth) {
         (galaxy as any).isStealth = true;
       }
+      if (g.isExtinct) {
+        (galaxy as any).isExtinct = true;
+      }
       return galaxy;
     });
     
     // Restore dark forest state
     this.darkForest.import(data.darkForest, this.galaxies);
+    this.darkForestStrike.import(data.darkForestStrike, this.galaxies);
   }
 }

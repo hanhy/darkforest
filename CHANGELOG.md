@@ -1,5 +1,67 @@
 # Changelog
 
+## [1.2.0] - 2026-03-20
+
+### ✨ New Features
+
+#### Dark Forest Strike System (黑暗森林打击系统)
+- **Coordinate Broadcast** (坐标广播)
+  - High-level civilizations (≥4) can broadcast other civs' coordinates
+  - Broadcasts propagate to nearby civilizations
+  - Broadcast probability increases with suspicion level
+
+- **Cleanup Strikes** (清理打击)
+  - Any civilization (≥3) can initiate strikes against exposed civs
+  - Strike probability doubles when coordinates are broadcast
+  - Stealth mode reduces strike success by 90%
+
+- **Strike Methods** (打击方式)
+  - Cleaning (cleaning): Basic cleanup, available at level 3+
+  - Photoid (光粒): High-level weapon (level 8+)
+  - Dual-Vector Foil (二向箔): Dimension reduction weapon (level 8+)
+
+- **Extinction Tracking** (灭绝追踪)
+  - Extinct civilizations marked with gray color
+  - Tooltip shows "Extinct" status
+  - Statistics track total strikes and extinct civs
+
+### 🔧 Technical Changes
+
+#### New Files
+- `src/core/DarkForestStrike.ts` - Strike and broadcast mechanics
+
+#### Modified Files
+- `src/core/Universe.ts` - Integrated strike system, added strike processing
+- `src/core/Galaxy.ts` - Added `isExtinct` flag
+- `src/ui/HUD.ts` - Added strike and extinction statistics
+- `src/render/Tooltip.ts` - Show extinct status
+- `CHANGELOG.md` - Updated with new features
+
+### 🎮 Gameplay Changes
+
+1. **Extinct Civilizations**
+   - Displayed as dim gray dots
+   - No longer evolve or interact
+   - Permanently removed from simulation
+
+2. **Strike Balance**
+   - Level 3-4: Very rare strikes (1-2%)
+   - Level 5-7: Moderate strikes (5-20%)
+   - Level 8-10: High strike probability (35-70%)
+
+3. **Strategic Depth**
+   - Broadcasting coordinates is risky (attracts other strikers)
+   - Stealth is essential for survival
+   - Low-level civs must hide or perish
+
+### 📊 Statistics Display
+
+New HUD stats:
+- 💥 Strikes: Total strike attempts
+- ☠️ Extinct Civs: Civilizations destroyed
+
+---
+
 ## [1.1.0] - 2026-03-17
 
 ### ✨ New Features
