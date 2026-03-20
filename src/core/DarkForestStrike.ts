@@ -189,6 +189,7 @@ export class DarkForestStrike {
 
   /**
    * Process broadcasts - other civilizations may receive and act on them
+   * Optimized: only process recent broadcasts, clean up old ones
    */
   processBroadcasts(
     galaxies: Galaxy[],
@@ -197,9 +198,15 @@ export class DarkForestStrike {
   ): StrikeEvent[] {
     const newStrikes: StrikeEvent[] = [];
     
-    for (const broadcast of this.broadcasts) {
+    // Only process broadcasts from last 10 rounds (performance optimization)
+    const recentBroadcasts = this.broadcasts.filter(b => round - b.round <= 10);
+    
+    for (const broadcast of recentBroadcasts) {
       // Skip if target is already extinct
       if (this.extinctCivilizations.has(broadcast.target)) continue;
+      
+      // Use Set for O(1) lookup instead of array includes
+      const receivedSet = new Set(broadcast.receivedBy);
       
       // Find civilizations that receive the broadcast
       for (const galaxy of galaxies) {
@@ -209,8 +216,8 @@ export class DarkForestStrike {
         if (galaxy.civilizationLevel < this.minStrikeLevel) continue;
         
         // Check if already received this broadcast
-        const broadcastKey = `${broadcast.target.x},${broadcast.target.y},${broadcast.target.z}`;
-        if (broadcast.receivedBy.includes(broadcastKey)) continue;
+        const broadcastKey = `${galaxy.x},${galaxy.y},${galaxy.z}`;
+        if (receivedSet.has(broadcastKey)) continue;
         
         // Check distance - can only receive if within range
         const dist = galaxy.distanceTo(broadcast.broadcaster);
@@ -218,6 +225,7 @@ export class DarkForestStrike {
         
         // Mark as received
         broadcast.receivedBy.push(broadcastKey);
+        receivedSet.add(broadcastKey);
         
         // This civilization may now strike
         const strike = this.checkStrike(galaxy, broadcast.target, round, true);
@@ -226,6 +234,11 @@ export class DarkForestStrike {
           newStrikes.push(strike);
         }
       }
+    }
+    
+    // Clean up old broadcasts (older than 20 rounds) to prevent memory leak
+    if (this.broadcasts.length > 100) {
+      this.broadcasts = this.broadcasts.filter(b => round - b.round <= 20);
     }
     
     return newStrikes;
