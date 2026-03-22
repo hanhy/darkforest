@@ -78,6 +78,9 @@ export class AudioManager {
 
     // Layer 4: Subtle filtered noise for spacious texture
     this.createSpaceNoise();
+
+    // Layer 5: Ethereal female vocal — soft, sorrowful humming
+    this.createEtherealVocal();
   }
 
   /** Stop ambient sound */
@@ -298,6 +301,152 @@ export class AudioManager {
     lfo.start();
 
     this.ambientNodes.push({ noise, gain, lfo, lfoGain });
+  }
+
+  /**
+   * Create ethereal female vocal simulation
+   * Uses formant synthesis to approximate a soft, sorrowful female humming
+   * Conveys the indifference and melancholy of the universe
+   */
+  private createEtherealVocal(): void {
+    if (!this.audioCtx) return;
+
+    const ctx = this.audioCtx;
+
+    // Female vocal formants — "ah" / "oo" vowel blending
+    // Fundamental frequency: ~220-330Hz range (alto female voice)
+    const fundamental = ctx.createOscillator();
+    fundamental.type = 'sine';
+    fundamental.frequency.value = 260; // ~middle C area
+
+    // Very slow pitch drift for natural, haunting quality
+    const pitchLfo = ctx.createOscillator();
+    const pitchLfoGain = ctx.createGain();
+    pitchLfo.type = 'sine';
+    pitchLfo.frequency.value = 0.08; // Very slow wandering
+    pitchLfoGain.gain.value = 15; // ±15 Hz drift
+    pitchLfo.connect(pitchLfoGain);
+    pitchLfoGain.connect(fundamental.frequency);
+
+    // Second voice — slightly detuned for chorus/ethereal effect
+    const voice2 = ctx.createOscillator();
+    voice2.type = 'sine';
+    voice2.frequency.value = 263; // Slight detune (+3Hz)
+
+    const voice2Lfo = ctx.createOscillator();
+    const voice2LfoGain = ctx.createGain();
+    voice2Lfo.type = 'sine';
+    voice2Lfo.frequency.value = 0.06;
+    voice2LfoGain.gain.value = 12;
+    voice2Lfo.connect(voice2LfoGain);
+    voice2LfoGain.connect(voice2.frequency);
+
+    // Third voice — octave higher, very faint, for "breath" quality
+    const voice3 = ctx.createOscillator();
+    voice3.type = 'sine';
+    voice3.frequency.value = 523; // One octave up
+    const voice3Lfo = ctx.createOscillator();
+    const voice3LfoGain = ctx.createGain();
+    voice3Lfo.type = 'sine';
+    voice3Lfo.frequency.value = 0.1;
+    voice3LfoGain.gain.value = 20;
+    voice3Lfo.connect(voice3LfoGain);
+    voice3LfoGain.connect(voice3.frequency);
+
+    // Formant filters — shape the sound into a vowel-like quality
+    // Formant 1 (~800Hz) — "ah" vowel
+    const formant1 = ctx.createBiquadFilter();
+    formant1.type = 'bandpass';
+    formant1.frequency.value = 800;
+    formant1.Q.value = 12;
+
+    // Formant 2 (~1200Hz) — adds "oo" quality
+    const formant2 = ctx.createBiquadFilter();
+    formant2.type = 'bandpass';
+    formant2.frequency.value = 1200;
+    formant2.Q.value = 10;
+
+    // Slow formant sweep — voice drifts between "ah" and "oo"
+    const formantLfo = ctx.createOscillator();
+    const formantLfoGain = ctx.createGain();
+    formantLfo.type = 'sine';
+    formantLfo.frequency.value = 0.03; // Very slow vowel shift
+    formantLfoGain.gain.value = 300; // Sweep range
+    formantLfo.connect(formantLfoGain);
+    formantLfoGain.connect(formant1.frequency);
+
+    // Volume envelope — slow breathing, phrases of ~8-12 seconds
+    const vocalGain = ctx.createGain();
+    vocalGain.gain.value = 0.035; // Very quiet — ghostly presence
+
+    // Breathing LFO — simulates phrases
+    const breathLfo = ctx.createOscillator();
+    const breathLfoGain = ctx.createGain();
+    breathLfo.type = 'sine';
+    breathLfo.frequency.value = 0.07; // ~14 second cycle
+    breathLfoGain.gain.value = 0.03; // Modulation depth
+    breathLfo.connect(breathLfoGain);
+    breathLfoGain.connect(vocalGain.gain);
+
+    // Mix voices through formants
+    const voiceMix = ctx.createGain();
+    voiceMix.gain.value = 1.0;
+
+    fundamental.connect(voiceMix);
+    voice2.connect(voiceMix);
+
+    const voice3Gain = ctx.createGain();
+    voice3Gain.gain.value = 0.3; // Octave voice much quieter
+    voice3.connect(voice3Gain);
+    voice3Gain.connect(voiceMix);
+
+    // Split through two formant filters and recombine
+    const formantMix = ctx.createGain();
+    formantMix.gain.value = 1.0;
+
+    const f1Gain = ctx.createGain();
+    f1Gain.gain.value = 0.7;
+    const f2Gain = ctx.createGain();
+    f2Gain.gain.value = 0.4;
+
+    voiceMix.connect(formant1);
+    voiceMix.connect(formant2);
+    formant1.connect(f1Gain);
+    formant2.connect(f2Gain);
+    f1Gain.connect(formantMix);
+    f2Gain.connect(formantMix);
+
+    // Final gentle lowpass to smooth everything
+    const smoothing = ctx.createBiquadFilter();
+    smoothing.type = 'lowpass';
+    smoothing.frequency.value = 2000;
+    smoothing.Q.value = 0.3;
+
+    formantMix.connect(smoothing);
+    smoothing.connect(vocalGain);
+    vocalGain.connect(this.masterGain!);
+
+    // Start all oscillators
+    fundamental.start();
+    voice2.start();
+    voice3.start();
+    pitchLfo.start();
+    voice2Lfo.start();
+    voice3Lfo.start();
+    formantLfo.start();
+    breathLfo.start();
+
+    // Store references for cleanup
+    this.ambientNodes.push({
+      osc: fundamental,
+      gain: vocalGain,
+      lfo: pitchLfo,
+      lfoGain: pitchLfoGain,
+    });
+    // Store extra oscillators in separate entries for cleanup
+    this.ambientNodes.push({ osc: voice2, gain: voice3Gain, lfo: voice2Lfo, lfoGain: voice2LfoGain });
+    this.ambientNodes.push({ osc: voice3, gain: f1Gain, lfo: voice3Lfo, lfoGain: voice3LfoGain });
+    this.ambientNodes.push({ osc: formantLfo, gain: f2Gain, lfo: breathLfo, lfoGain: breathLfoGain });
   }
 
   /**

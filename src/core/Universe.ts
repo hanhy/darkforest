@@ -78,24 +78,9 @@ export class Universe {
   tick(): void {
     if (this.finished) return;
 
-    // Normal evolution - track level changes for bulletin
+    // Normal evolution
     for (const galaxy of this.galaxies) {
-      const prevLevel = galaxy.civilizationLevel;
       galaxy.evolve();
-      const newLevel = galaxy.civilizationLevel;
-      // Notify on reaching level 5, 7, 9, 10
-      if (galaxy.hasCivilization && newLevel > prevLevel) {
-        const milestones = [5, 7, 9, 10];
-        for (const m of milestones) {
-          if (prevLevel < m && newLevel >= m) {
-            bulletinBoard.addMessage(
-              'evolution',
-              `Civilization at ${formatPos(galaxy.x, galaxy.y, galaxy.z)} reached Level ${m}`,
-              this.age
-            );
-          }
-        }
-      }
     }
 
     // Dark Forest mechanics
