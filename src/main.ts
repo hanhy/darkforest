@@ -41,6 +41,9 @@ function startGame(config: GameConfig): void {
   audioManager.init();
   audioManager.startAmbient();
 
+  // Wire strike visual effects
+  universe.onStrikeEffect = (type, galaxy) => renderer.addStrikeEffect(type as any, galaxy);
+
   // Setup time engine
   timeEngine = new TimeEngine(config.time.realTimePerSlice, () => {
     universe.tick();

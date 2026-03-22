@@ -4,6 +4,7 @@ import { chance } from '../utils/random';
 import { DarkForestSystem, TechExplosionEvent } from './DarkForestSystem';
 import { DarkForestStrike, StrikeEvent } from './DarkForestStrike';
 import { audioManager } from '../audio/AudioManager';
+import { bulletinBoard, formatPos } from '../ui/BulletinBoard';
 
 export class Universe {
   galaxies: Galaxy[] = [];
@@ -34,6 +35,9 @@ export class Universe {
   
   /** Recent strike events for display */
   recentStrikes: StrikeEvent[] = [];
+  
+  /** Callback for strike visual effects */
+  onStrikeEffect?: (type: 'photoid' | 'dual-vector-foil' | 'cleaning', galaxy: Galaxy) => void;
 
   init(config: GameConfig): void {
     this.radius = config.universe.radius;
@@ -74,9 +78,24 @@ export class Universe {
   tick(): void {
     if (this.finished) return;
 
-    // Normal evolution
+    // Normal evolution - track level changes for bulletin
     for (const galaxy of this.galaxies) {
+      const prevLevel = galaxy.civilizationLevel;
       galaxy.evolve();
+      const newLevel = galaxy.civilizationLevel;
+      // Notify on reaching level 5, 7, 9, 10
+      if (galaxy.hasCivilization && newLevel > prevLevel) {
+        const milestones = [5, 7, 9, 10];
+        for (const m of milestones) {
+          if (prevLevel < m && newLevel >= m) {
+            bulletinBoard.addMessage(
+              'evolution',
+              `Civilization at ${formatPos(galaxy.x, galaxy.y, galaxy.z)} reached Level ${m}`,
+              this.age
+            );
+          }
+        }
+      }
     }
 
     // Dark Forest mechanics
@@ -192,6 +211,12 @@ export class Universe {
         if (broadcast) {
           // Play broadcast sound
           audioManager.playBroadcast();
+          // Bulletin: broadcast event
+          bulletinBoard.addMessage(
+            'broadcast',
+            `${formatPos(broadcaster.x, broadcaster.y, broadcaster.z)} broadcast coordinates of ${formatPos(target.x, target.y, target.z)}`,
+            this.age
+          );
           // Broadcast happened, now check if broadcaster also strikes
           strikeSystem.checkStrike(broadcaster, target, this.round, false);
         }
@@ -201,11 +226,26 @@ export class Universe {
     // Process broadcasts - other civs may receive and strike
     const newStrikes = strikeSystem.processBroadcasts(this.galaxies, this.round);
     
-    // Play sounds for strikes
+    // Play sounds for strikes and add bulletin messages + visual effects
     newStrikes.forEach(strike => {
       audioManager.playStrike(strike.method);
+      // Bulletin message
+      const pos = formatPos(strike.victim.x, strike.victim.y, strike.victim.z);
+      if (strike.method === 'photoid') {
+        bulletinBoard.addMessage('strike_photoid', `Photoid strike on ${pos}!`, this.age);
+      } else if (strike.method === 'dual-vector-foil') {
+        bulletinBoard.addMessage('strike_dvf', `Dual-vector foil deployed at ${pos}!`, this.age);
+      } else {
+        bulletinBoard.addMessage('strike_cleaning', `Cleaning strike on ${pos}!`, this.age);
+      }
+      // Visual effect
+      if (this.onStrikeEffect) {
+        this.onStrikeEffect(strike.method, strike.victim);
+      }
       if (strike.success) {
-        // Small delay before extinction sound
+        // Extinction message
+        const methodName = strike.method === 'photoid' ? 'photoid' : strike.method === 'dual-vector-foil' ? 'dual-vector foil' : 'cleaning';
+        bulletinBoard.addMessage('extinction', `Civilization at ${pos} destroyed by ${methodName}`, this.age);
         setTimeout(() => audioManager.playExtinction(), 200);
       }
     });
