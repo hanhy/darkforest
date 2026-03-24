@@ -106,9 +106,13 @@ canvas.addEventListener('click', (e) => {
 
   if (galaxy) {
     renderer.selectGalaxy(galaxy);
+    // Set focus target for zoom operations
+    camera.setFocus(galaxy.x, galaxy.y, galaxy.z);
   } else {
     // Click on empty space: clear the connection
     renderer.clearConnection();
+    // Clear focus target
+    camera.clearFocus();
   }
 });
 

@@ -8,6 +8,12 @@ export class Camera {
   panX: number = 0;
   panY: number = 0;
 
+  // Focus target for zoom (galaxy to zoom towards)
+  focusX: number = 0;
+  focusY: number = 0;
+  focusZ: number = 0;
+  hasFocusTarget: boolean = false;
+
   private canvas: HTMLCanvasElement;
   private dragging: boolean = false;
   private lastMouseX: number = 0;
@@ -22,7 +28,23 @@ export class Camera {
     this.canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      this.zoom *= zoomFactor;
+      
+      if (this.hasFocusTarget) {
+        // Zoom towards focus target
+        const focusScreen = this.project(this.focusX, this.focusY, this.focusZ);
+        const zoomBefore = this.zoom;
+        this.zoom *= zoomFactor;
+        
+        // Adjust pan to keep focus point under cursor
+        const focusScreenAfter = this.project(this.focusX, this.focusY, this.focusZ);
+        const dx = focusScreen[0] - focusScreenAfter[0];
+        const dy = focusScreen[1] - focusScreenAfter[1];
+        this.panX += dx;
+        this.panY += dy;
+      } else {
+        // Normal zoom from center
+        this.zoom *= zoomFactor;
+      }
     }, { passive: false });
 
     this.canvas.addEventListener('mousedown', (e) => {
@@ -92,5 +114,19 @@ export class Camera {
     this.panY = 0;
     this.rotX = 0.3;
     this.rotY = 0;
+    this.hasFocusTarget = false;
+  }
+
+  /** Set focus target for zoom operations */
+  setFocus(x: number, y: number, z: number): void {
+    this.focusX = x;
+    this.focusY = y;
+    this.focusZ = z;
+    this.hasFocusTarget = true;
+  }
+
+  /** Clear focus target */
+  clearFocus(): void {
+    this.hasFocusTarget = false;
   }
 }
