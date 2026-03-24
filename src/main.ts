@@ -44,6 +44,9 @@ function startGame(config: GameConfig): void {
   // Wire strike visual effects
   universe.onStrikeEffect = (type, galaxy) => renderer.addStrikeEffect(type as any, galaxy);
 
+  // Wire broadcast visual effects
+  universe.onBroadcastEffect = (galaxy) => renderer.addBroadcastEffect(galaxy, 15000, 1);
+
   // Setup time engine
   timeEngine = new TimeEngine(config.time.realTimePerSlice, () => {
     universe.tick();

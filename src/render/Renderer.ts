@@ -59,6 +59,14 @@ interface NebulaCloud {
   driftAngle: number;
 }
 
+/** Broadcast warning effect for civilizations whose coordinates are exposed */
+interface BroadcastEffect {
+  galaxy: Galaxy;
+  startTime: number;
+  duration: number;
+  intensity: number;
+}
+
 export class Renderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -75,6 +83,9 @@ export class Renderer {
 
   // Active strike visual effects
   private strikeEffects: StrikeEffect[] = [];
+
+  // Active broadcast warning effects
+  private broadcastEffects: BroadcastEffect[] = [];
 
   constructor(canvas: HTMLCanvasElement, camera: Camera) {
     this.canvas = canvas;
@@ -182,6 +193,9 @@ export class Renderer {
     for (const { galaxy, sx, sy, depth } of projected) {
       this.drawGalaxy(galaxy, sx, sy, depth, universe.radius);
     }
+
+    // Draw broadcast warning effects (above galaxies)
+    this.drawBroadcastEffects();
 
     // Draw strike effects
     this.drawStrikeEffects();
@@ -448,6 +462,104 @@ export class Renderer {
           break;
       }
     }
+  }
+
+  /** Draw broadcast warning effects - visible warning for exposed civilizations */
+  private drawBroadcastEffects(): void {
+    const now = performance.now();
+    const { ctx } = this;
+
+    // Remove expired effects (broadcasts last for 10 rounds = 50 seconds at 5s/slice)
+    this.broadcastEffects = this.broadcastEffects.filter(e => now - e.startTime < e.duration);
+
+    for (const effect of this.broadcastEffects) {
+      const elapsed = now - effect.startTime;
+      const progress = elapsed / effect.duration; // 0 → 1
+      const [sx, sy] = this.camera.project(effect.galaxy.x, effect.galaxy.y, effect.galaxy.z);
+
+      // Pulsing warning ring around the broadcast civilization
+      const pulse = Math.sin(progress * Math.PI * 4) * 0.5 + 0.5; // 0 → 1 → 0 pattern
+      const baseRadius = effect.galaxy.getRadius();
+      const expandRadius = baseRadius + pulse * 15 + progress * 20;
+      const alpha = (1 - progress) * effect.intensity * 0.6;
+
+      // Outer warning glow (red-orange for danger)
+      const warningGradient = ctx.createRadialGradient(sx, sy, baseRadius, sx, sy, expandRadius * 1.5);
+      warningGradient.addColorStop(0, `rgba(255, 100, 50, 0)`);
+      warningGradient.addColorStop(0.3, `rgba(255, 80, 30, ${alpha * 0.3})`);
+      warningGradient.addColorStop(0.6, `rgba(255, 60, 20, ${alpha * 0.15})`);
+      warningGradient.addColorStop(1, `rgba(255, 40, 10, 0)`);
+
+      ctx.beginPath();
+      ctx.arc(sx, sy, expandRadius * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = warningGradient;
+      ctx.fill();
+
+      // Pulsing warning ring
+      const ringAlpha = alpha * (0.4 + pulse * 0.4);
+      ctx.beginPath();
+      ctx.arc(sx, sy, expandRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255, 80, 40, ${ringAlpha})`;
+      ctx.lineWidth = 2 + pulse * 1.5;
+      ctx.stroke();
+
+      // Inner dashed ring rotating
+      const rotation = progress * Math.PI * 2;
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(rotation);
+
+      const dashCount = 8;
+      const dashArc = (Math.PI * 2) / dashCount;
+      for (let i = 0; i < dashCount; i++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, expandRadius * 0.85, i * dashArc + dashArc * 0.2, i * dashArc + dashArc * 0.7);
+        ctx.strokeStyle = `rgba(255, 120, 60, ${ringAlpha * 0.7})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      // Signal wave pattern expanding outward
+      const waveCount = 3;
+      for (let i = 0; i < waveCount; i++) {
+        const waveProgress = (progress + i / waveCount) % 1;
+        const waveRadius = baseRadius + waveProgress * (expandRadius * 1.2);
+        const waveAlpha = alpha * (1 - waveProgress) * 0.3;
+
+        if (waveAlpha > 0.01) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, waveRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(255, 150, 80, ${waveAlpha})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  /** Add a broadcast warning effect */
+  addBroadcastEffect(galaxy: Galaxy, duration: number = 10000, intensity: number = 1): void {
+    // Check if already has an active broadcast effect
+    const existing = this.broadcastEffects.find(e => e.galaxy === galaxy);
+    if (existing) {
+      // Refresh existing effect
+      existing.startTime = performance.now();
+      existing.intensity = Math.max(existing.intensity, intensity);
+    } else {
+      this.broadcastEffects.push({
+        galaxy,
+        startTime: performance.now(),
+        duration,
+        intensity,
+      });
+    }
+  }
+
+  /** Clear broadcast effects for a galaxy */
+  clearBroadcastEffect(galaxy: Galaxy): void {
+    this.broadcastEffects = this.broadcastEffects.filter(e => e.galaxy !== galaxy);
   }
 
   /** Photoid (光粒): bright white-yellow flash + expanding ring */

@@ -35,9 +35,12 @@ export class Universe {
   
   /** Recent strike events for display */
   recentStrikes: StrikeEvent[] = [];
-  
+
   /** Callback for strike visual effects */
   onStrikeEffect?: (type: 'photoid' | 'dual-vector-foil' | 'cleaning', galaxy: Galaxy) => void;
+
+  /** Callback for broadcast visual effects */
+  onBroadcastEffect?: (galaxy: Galaxy) => void;
 
   init(config: GameConfig): void {
     this.radius = config.universe.radius;
@@ -202,6 +205,10 @@ export class Universe {
             `${formatPos(broadcaster.x, broadcaster.y, broadcaster.z)} broadcast coordinates of ${formatPos(target.x, target.y, target.z)}`,
             this.age
           );
+          // Trigger broadcast warning visual effect
+          if (this.onBroadcastEffect) {
+            this.onBroadcastEffect(target);
+          }
           // Broadcast happened, now check if broadcaster also strikes
           strikeSystem.checkStrike(broadcaster, target, this.round, false);
         }
