@@ -200,13 +200,10 @@ export class Renderer {
     const time = Date.now() * 0.001;
 
     for (const star of this.stars) {
-      const [sx, sy] = this.camera.project(
-        star.x * this.camera.zoom * 500,
-        star.y * this.camera.zoom * 500,
-        star.z * this.camera.zoom * 500
-      );
-
-      if (sx < -10 || sx > w + 10 || sy < -10 || sy > h + 10) continue;
+      // Draw stars in screen space, not affected by camera
+      // Use pre-computed screen positions based on star coordinates
+      const sx = (star.x * 0.5 + 0.5) * w;
+      const sy = (star.y * 0.5 + 0.5) * h;
 
       // Twinkle effect
       const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
