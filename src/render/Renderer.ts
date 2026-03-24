@@ -1,6 +1,7 @@
 import { Universe } from '../core/Universe';
 import { Galaxy } from '../core/Galaxy';
 import { Camera } from './Camera';
+import { GalaxySprites } from './GalaxySprites';
 
 /** Map civilization level (0-10) to visible light spectrum color. */
 function spectrumColor(level: number): [number, number, number] {
@@ -65,6 +66,7 @@ export class Renderer {
     this.ctx = canvas.getContext('2d')!;
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    GalaxySprites.init();
   }
 
   private resize(): void {
@@ -174,88 +176,146 @@ export class Renderer {
       ctx.arc(sx, sy, baseSize * 2, 0, Math.PI * 2);
       ctx.fillStyle = gradient;
       ctx.fill();
+      return;
+    }
+
+    const level = galaxy.civilizationLevel;
+    const t = Math.min(level / 10, 1);
+    const radius = galaxy.getRadius();
+    const [r, g, b, baseAlpha] = galaxy.getColor();
+    const alpha = baseAlpha * depthFactor;
+
+    // Animated pulse for civilizations
+    const pulse = 0.95 + 0.1 * Math.sin(Date.now() * 0.003 + level * 0.5);
+
+    // Check if zoomed in enough to show sprite detail
+    const zoomThreshold = 3; // Show sprite when zoom >= 3
+    const showSprite = this.camera.zoom >= zoomThreshold && level >= 1;
+
+    if (showSprite) {
+      // Draw detailed sprite
+      this.drawGalaxySprite(sx, sy, galaxy, level, depthFactor);
     } else {
-      const level = galaxy.civilizationLevel;
-      const t = Math.min(level / 10, 1);
-      const radius = galaxy.getRadius();
-      const [r, g, b, baseAlpha] = galaxy.getColor();
-      const alpha = baseAlpha * depthFactor;
+      // Draw simplified version
+      this.drawGalaxyDot(sx, sy, radius, [r, g, b], alpha, level, pulse, depthFactor, galaxy.isStealth);
+    }
+  }
 
-      // Animated pulse for civilizations
-      const pulse = 0.95 + 0.1 * Math.sin(Date.now() * 0.003 + level * 0.5);
+  /** Draw galaxy as detailed sprite when zoomed in */
+  private drawGalaxySprite(sx: number, sy: number, galaxy: Galaxy, level: number, depthFactor: number): void {
+    const ctx = this.ctx;
+    const sprite = GalaxySprites.getSprite(level);
+    if (!sprite) return;
 
-      if (galaxy.isStealth) {
-        // Stealth: subtle pulsing ring with blue tint
-        const stealthPulse = 0.4 + 0.3 * Math.sin(Date.now() * 0.002);
-        
-        // Outer stealth field
-        const stealthGradient = ctx.createRadialGradient(sx, sy, radius * 0.5, sx, sy, radius * 3);
-        stealthGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
-        stealthGradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${alpha * stealthPulse * 0.15})`);
-        stealthGradient.addColorStop(0.6, `rgba(100, 150, 255, ${alpha * stealthPulse * 0.08})`);
-        stealthGradient.addColorStop(1, 'rgba(80, 120, 200, 0)');
-        ctx.beginPath();
-        ctx.arc(sx, sy, radius * 3, 0, Math.PI * 2);
-        ctx.fillStyle = stealthGradient;
-        ctx.fill();
+    const baseSize = galaxy.getRadius() * 2;
+    const spriteSize = baseSize * this.camera.zoom * 0.8;
 
-        // Stealth ring
-        ctx.beginPath();
-        ctx.arc(sx, sy, radius * 1.8, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(100, 150, 255, ${alpha * stealthPulse * 0.4})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
+    // Apply depth-based alpha
+    ctx.save();
+    ctx.globalAlpha = depthFactor;
 
-      if (galaxy.shouldShowGlow()) {
-        // Enhanced glow for high-level civilizations
-        const glowTime = Date.now() * 0.002;
-        const glowPulse = 1 + 0.2 * Math.sin(glowTime);
-        
-        // Multi-layer glow
-        const outerGlowRadius = radius * 4 * glowPulse;
-        const midGlowRadius = radius * 2.5;
-        
-        // Outer glow
-        const outerGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, outerGlowRadius);
-        outerGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.12})`);
-        outerGlow.addColorStop(0.4, `rgba(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.9)}, ${alpha * 0.06})`);
-        outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.beginPath();
-        ctx.arc(sx, sy, outerGlowRadius, 0, Math.PI * 2);
-        ctx.fillStyle = outerGlow;
-        ctx.fill();
+    // Draw sprite centered at galaxy position
+    ctx.drawImage(
+      sprite,
+      sx - spriteSize / 2,
+      sy - spriteSize / 2,
+      spriteSize,
+      spriteSize
+    );
 
-        // Mid glow
-        const midGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, midGlowRadius);
-        midGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.2})`);
-        midGlow.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${alpha * 0.08})`);
-        midGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.beginPath();
-        ctx.arc(sx, sy, midGlowRadius, 0, Math.PI * 2);
-        ctx.fillStyle = midGlow;
-        ctx.fill();
-      }
-
-      // Core galaxy body with gradient
-      const coreGradient = ctx.createRadialGradient(
-        sx - radius * 0.3, sy - radius * 0.3, 0,
-        sx, sy, radius
-      );
-      coreGradient.addColorStop(0, `rgba(${Math.min(r + 50, 255)}, ${Math.min(g + 50, 255)}, ${Math.min(b + 50, 255)}, ${alpha * pulse})`);
-      coreGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * pulse})`);
-      coreGradient.addColorStop(1, `rgba(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.8)}, ${alpha * pulse * 0.8})`);
-      
+    // Draw stealth effect if applicable
+    if (galaxy.isStealth) {
+      const stealthPulse = 0.4 + 0.3 * Math.sin(Date.now() * 0.002);
       ctx.beginPath();
-      ctx.arc(sx, sy, radius, 0, Math.PI * 2);
-      ctx.fillStyle = coreGradient;
+      ctx.arc(sx, sy, spriteSize * 0.7, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(100, 150, 255, ${stealthPulse * 0.4 * depthFactor})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /** Draw galaxy as simple dot when zoomed out */
+  private drawGalaxyDot(
+    sx: number, sy: number, radius: number, color: [number, number, number],
+    alpha: number, level: number, pulse: number, depthFactor: number, isStealth: boolean
+  ): void {
+    const ctx = this.ctx;
+    const [r, g, b] = color;
+
+    // Stealth effect
+    if (isStealth) {
+      const stealthPulse = 0.4 + 0.3 * Math.sin(Date.now() * 0.002);
+      const stealthGradient = ctx.createRadialGradient(sx, sy, radius * 0.5, sx, sy, radius * 3);
+      stealthGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
+      stealthGradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${alpha * stealthPulse * 0.15})`);
+      stealthGradient.addColorStop(0.6, `rgba(100, 150, 255, ${alpha * stealthPulse * 0.08})`);
+      stealthGradient.addColorStop(1, 'rgba(80, 120, 200, 0)');
+      ctx.beginPath();
+      ctx.arc(sx, sy, radius * 3, 0, Math.PI * 2);
+      ctx.fillStyle = stealthGradient;
       ctx.fill();
 
-      // Spiral arms hint for high-level civs
-      if (level >= 7) {
-        this.drawSpiralArms(sx, sy, radius, [r, g, b], alpha, level);
-      }
+      ctx.beginPath();
+      ctx.arc(sx, sy, radius * 1.8, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(100, 150, 255, ${alpha * stealthPulse * 0.4})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
+
+    if (this.shouldShowGlow(level)) {
+      // Enhanced glow for high-level civilizations
+      const glowTime = Date.now() * 0.002;
+      const glowPulse = 1 + 0.2 * Math.sin(glowTime);
+
+      // Multi-layer glow
+      const outerGlowRadius = radius * 4 * glowPulse;
+      const midGlowRadius = radius * 2.5;
+
+      // Outer glow
+      const outerGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, outerGlowRadius);
+      outerGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.12})`);
+      outerGlow.addColorStop(0.4, `rgba(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.9)}, ${alpha * 0.06})`);
+      outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.beginPath();
+      ctx.arc(sx, sy, outerGlowRadius, 0, Math.PI * 2);
+      ctx.fillStyle = outerGlow;
+      ctx.fill();
+
+      // Mid glow
+      const midGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, midGlowRadius);
+      midGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.2})`);
+      midGlow.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${alpha * 0.08})`);
+      midGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.beginPath();
+      ctx.arc(sx, sy, midGlowRadius, 0, Math.PI * 2);
+      ctx.fillStyle = midGlow;
+      ctx.fill();
+    }
+
+    // Core galaxy body with gradient
+    const coreGradient = ctx.createRadialGradient(
+      sx - radius * 0.3, sy - radius * 0.3, 0,
+      sx, sy, radius
+    );
+    coreGradient.addColorStop(0, `rgba(${Math.min(r + 50, 255)}, ${Math.min(g + 50, 255)}, ${Math.min(b + 50, 255)}, ${alpha * pulse})`);
+    coreGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * pulse})`);
+    coreGradient.addColorStop(1, `rgba(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.8)}, ${alpha * pulse * 0.8})`);
+
+    ctx.beginPath();
+    ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = coreGradient;
+    ctx.fill();
+
+    // Spiral arms hint for high-level civs
+    if (level >= 7) {
+      this.drawSpiralArms(sx, sy, radius, [r, g, b], alpha, level);
+    }
+  }
+
+  private shouldShowGlow(level: number): boolean {
+    return level >= 5;
   }
 
   private drawSpiralArms(sx: number, sy: number, radius: number, color: [number, number, number], alpha: number, level: number): void {
