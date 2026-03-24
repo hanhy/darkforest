@@ -1,7 +1,6 @@
 import { GameConfig } from '../config';
 import { Galaxy } from './Galaxy';
 import { chance } from '../utils/random';
-import { generateRandomGalaxyType } from './GalaxyType';
 import { DarkForestSystem, TechExplosionEvent } from './DarkForestSystem';
 import { DarkForestStrike, StrikeEvent } from './DarkForestStrike';
 import { audioManager } from '../audio/AudioManager';
@@ -71,11 +70,7 @@ export class Universe {
       const hasCiv = chance(civProbability);
       // Each civilization gets a random evolve probability between 0.01 and 0.5
       const civEvolveProb = hasCiv ? 0.01 + Math.random() * 0.49 : 0;
-      
-      // Generate galaxy type for visual diversity
-      const { type: galaxyType, params: visualParams } = generateRandomGalaxyType();
-      
-      this.galaxies.push(new Galaxy(x, y, z, hasCiv, evolveSpeed, civEvolveProb, galaxyType, visualParams));
+      this.galaxies.push(new Galaxy(x, y, z, hasCiv, evolveSpeed, civEvolveProb));
     }
   }
 

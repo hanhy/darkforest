@@ -1,5 +1,4 @@
 import { chance } from '../utils/random';
-import { GalaxyType, GalaxyTypeConfig } from './GalaxyType';
 
 export class Galaxy {
   x: number;
@@ -13,10 +12,6 @@ export class Galaxy {
   isStealth: boolean = false;
   /** Extinct due to dark forest strike */
   isExtinct: boolean = false;
-  /** Galaxy type for visual diversity */
-  galaxyType: GalaxyType;
-  /** Visual parameters for rendering */
-  visualParams: GalaxyTypeConfig['params'];
 
   constructor(
     x: number,
@@ -25,8 +20,6 @@ export class Galaxy {
     hasCivilization: boolean,
     evolveSpeed: number,
     evolveProbability: number,
-    galaxyType: GalaxyType = 'point',
-    visualParams: GalaxyTypeConfig['params'] = { size: 1, density: 1, color: [100, 100, 100] },
   ) {
     this.x = x;
     this.y = y;
@@ -35,8 +28,6 @@ export class Galaxy {
     this.civilizationLevel = hasCivilization ? 0 : -1;
     this.evolveSpeed = evolveSpeed;
     this.evolveProbability = evolveProbability;
-    this.galaxyType = galaxyType;
-    this.visualParams = visualParams;
   }
 
   /** Attempt evolution for one time slice */
