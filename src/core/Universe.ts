@@ -42,6 +42,9 @@ export class Universe {
   /** Callback for broadcast visual effects */
   onBroadcastEffect?: (galaxy: Galaxy) => void;
 
+  /** Callback to clear broadcast visual effects */
+  onClearBroadcastEffect?: (galaxy: Galaxy) => void;
+
   init(config: GameConfig): void {
     this.radius = config.universe.radius;
     this.sliceYears = config.time.sliceYears;
@@ -233,6 +236,10 @@ export class Universe {
       // Visual effect
       if (this.onStrikeEffect) {
         this.onStrikeEffect(strike.method, strike.victim);
+      }
+      // Clear broadcast warning effect when struck
+      if (this.onClearBroadcastEffect) {
+        this.onClearBroadcastEffect(strike.victim);
       }
       if (strike.success) {
         // Extinction message

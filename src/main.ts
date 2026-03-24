@@ -47,6 +47,9 @@ function startGame(config: GameConfig): void {
   // Wire broadcast visual effects
   universe.onBroadcastEffect = (galaxy) => renderer.addBroadcastEffect(galaxy, 15000, 1);
 
+  // Wire clear broadcast visual effects
+  universe.onClearBroadcastEffect = (galaxy) => renderer.clearBroadcastEffect(galaxy);
+
   // Setup time engine
   timeEngine = new TimeEngine(config.time.realTimePerSlice, () => {
     universe.tick();
