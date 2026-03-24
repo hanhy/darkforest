@@ -36,10 +36,38 @@ interface StrikeEffect {
   duration: number;
 }
 
+/** Background star particle */
+interface StarParticle {
+  x: number;
+  y: number;
+  z: number;
+  size: number;
+  brightness: number;
+  twinkleSpeed: number;
+  twinkleOffset: number;
+}
+
+/** Nebula cloud for background */
+interface NebulaCloud {
+  x: number;
+  y: number;
+  z: number;
+  radius: number;
+  color: [number, number, number];
+  alpha: number;
+  driftSpeed: number;
+  driftAngle: number;
+}
+
 export class Renderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private camera: Camera;
+
+  // Background stars and nebula
+  private stars: StarParticle[] = [];
+  private nebulae: NebulaCloud[] = [];
+  private backgroundInitialized = false;
 
   // Connection line state
   selectedGalaxies: Galaxy[] = [];
@@ -54,6 +82,48 @@ export class Renderer {
     this.ctx = canvas.getContext('2d')!;
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    this.initBackground();
+  }
+
+  private initBackground(): void {
+    // Initialize background stars
+    this.stars = [];
+    for (let i = 0; i < 300; i++) {
+      this.stars.push({
+        x: Math.random() * 2 - 1,
+        y: Math.random() * 2 - 1,
+        z: Math.random() * 2 - 1,
+        size: 0.3 + Math.random() * 1.5,
+        brightness: 0.3 + Math.random() * 0.7,
+        twinkleSpeed: 0.02 + Math.random() * 0.05,
+        twinkleOffset: Math.random() * Math.PI * 2,
+      });
+    }
+
+    // Initialize nebula clouds
+    this.nebulae = [];
+    const nebulaColors: Array<[number, number, number]> = [
+      [100, 50, 200],   // Purple
+      [50, 100, 200],   // Blue
+      [200, 50, 150],   // Pink
+      [50, 200, 150],   // Teal
+      [200, 100, 50],   // Orange
+    ];
+    for (let i = 0; i < 5; i++) {
+      const color = nebulaColors[Math.floor(Math.random() * nebulaColors.length)];
+      this.nebulae.push({
+        x: (Math.random() - 0.5) * 1.5,
+        y: (Math.random() - 0.5) * 1.5,
+        z: (Math.random() - 0.5) * 1.5,
+        radius: 0.3 + Math.random() * 0.5,
+        color,
+        alpha: 0.03 + Math.random() * 0.05,
+        driftSpeed: 0.0001 + Math.random() * 0.0002,
+        driftAngle: Math.random() * Math.PI * 2,
+      });
+    }
+
+    this.backgroundInitialized = true;
   }
 
   private resize(): void {
@@ -97,9 +167,8 @@ export class Renderer {
     const w = canvas.width;
     const h = canvas.height;
 
-    // Clear
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, w, h);
+    // Draw background with gradient and nebula
+    this.drawBackground(w, h);
 
     // Sort galaxies by z-depth for painter's algorithm (far first)
     const projected: { galaxy: Galaxy; sx: number; sy: number; depth: number }[] = [];
@@ -133,15 +202,107 @@ export class Renderer {
     }
   }
 
+  private drawBackground(w: number, h: number): void {
+    const { ctx } = this;
+
+    // Deep space gradient background
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.8);
+    gradient.addColorStop(0, '#0a0a1a');
+    gradient.addColorStop(0.5, '#050510');
+    gradient.addColorStop(1, '#020208');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw nebula clouds (behind stars)
+    this.drawNebulae(w, h);
+
+    // Draw twinkling stars
+    this.drawStars(w, h);
+  }
+
+  private drawStars(w: number, h: number): void {
+    const { ctx } = this;
+    const time = Date.now() * 0.001;
+
+    for (const star of this.stars) {
+      const [sx, sy] = this.camera.project(
+        star.x * this.camera.zoom * 500,
+        star.y * this.camera.zoom * 500,
+        star.z * this.camera.zoom * 500
+      );
+
+      if (sx < -10 || sx > w + 10 || sy < -10 || sy > h + 10) continue;
+
+      // Twinkle effect
+      const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
+      const brightness = star.brightness * (0.7 + 0.3 * twinkle);
+
+      // Star glow
+      const glowRadius = star.size * (1.5 + twinkle * 0.5);
+      const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowRadius * 2);
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${brightness * 0.8})`);
+      gradient.addColorStop(0.4, `rgba(200, 220, 255, ${brightness * 0.3})`);
+      gradient.addColorStop(1, 'rgba(150, 180, 255, 0)');
+
+      ctx.beginPath();
+      ctx.arc(sx, sy, glowRadius * 2, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Star core
+      ctx.beginPath();
+      ctx.arc(sx, sy, star.size * 0.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+      ctx.fill();
+    }
+  }
+
+  private drawNebulae(w: number, h: number): void {
+    const { ctx } = this;
+
+    for (const nebula of this.nebulae) {
+      // Update nebula position (slow drift)
+      nebula.x += Math.cos(nebula.driftAngle) * nebula.driftSpeed;
+      nebula.y += Math.sin(nebula.driftAngle) * nebula.driftSpeed;
+
+      const [sx, sy] = this.camera.project(
+        nebula.x * this.camera.zoom * 800,
+        nebula.y * this.camera.zoom * 800,
+        nebula.z * this.camera.zoom * 800
+      );
+
+      const radius = nebula.radius * Math.min(w, h) * 0.8;
+
+      // Soft nebula gradient
+      const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+      const [r, g, b] = nebula.color;
+      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${nebula.alpha * 1.5})`);
+      gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${nebula.alpha})`);
+      gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${nebula.alpha * 0.3})`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.beginPath();
+      ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+  }
+
   private drawGalaxy(galaxy: Galaxy, sx: number, sy: number, depth: number, universeRadius: number): void {
     const ctx = this.ctx;
     const maxDepth = universeRadius;
     const depthFactor = 1 - Math.max(0, Math.min(1, (depth + maxDepth) / (2 * maxDepth))) * 0.5;
 
     if (!galaxy.hasCivilization) {
+      // Empty galaxy: subtle glow with depth-based size
+      const baseSize = 1.2 + depthFactor * 0.8;
+      const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, baseSize * 2);
+      gradient.addColorStop(0, `rgba(120, 120, 140, ${0.4 * depthFactor})`);
+      gradient.addColorStop(0.5, `rgba(80, 80, 100, ${0.2 * depthFactor})`);
+      gradient.addColorStop(1, 'rgba(60, 60, 80, 0)');
       ctx.beginPath();
-      ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(100, 100, 100, ${0.3 + depthFactor * 0.3})`;
+      ctx.arc(sx, sy, baseSize * 2, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
       ctx.fill();
     } else {
       const level = galaxy.civilizationLevel;
@@ -150,33 +311,117 @@ export class Renderer {
       const [r, g, b, baseAlpha] = galaxy.getColor();
       const alpha = baseAlpha * depthFactor;
 
-      if (galaxy.isStealth) {
-        const pulse = 0.5 + 0.3 * Math.sin(Date.now() * 0.002);
-        ctx.beginPath();
-        ctx.arc(sx, sy, radius * 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * pulse * 0.3})`;
-        ctx.fill();
-      }
-
-      if (galaxy.shouldShowGlow()) {
-        ctx.beginPath();
-        ctx.arc(sx, sy, radius * 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.15})`;
-        ctx.fill();
-      }
-
-      ctx.beginPath();
-      ctx.arc(sx, sy, radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-      ctx.fill();
+      // Animated pulse for civilizations
+      const pulse = 0.95 + 0.1 * Math.sin(Date.now() * 0.003 + level * 0.5);
 
       if (galaxy.isStealth) {
+        // Stealth: subtle pulsing ring with blue tint
+        const stealthPulse = 0.4 + 0.3 * Math.sin(Date.now() * 0.002);
+        
+        // Outer stealth field
+        const stealthGradient = ctx.createRadialGradient(sx, sy, radius * 0.5, sx, sy, radius * 3);
+        stealthGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
+        stealthGradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${alpha * stealthPulse * 0.15})`);
+        stealthGradient.addColorStop(0.6, `rgba(100, 150, 255, ${alpha * stealthPulse * 0.08})`);
+        stealthGradient.addColorStop(1, 'rgba(80, 120, 200, 0)');
         ctx.beginPath();
-        ctx.arc(sx, sy, radius + 2, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(100, 150, 255, ${alpha * 0.5})`;
+        ctx.arc(sx, sy, radius * 3, 0, Math.PI * 2);
+        ctx.fillStyle = stealthGradient;
+        ctx.fill();
+
+        // Stealth ring
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius * 1.8, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(100, 150, 255, ${alpha * stealthPulse * 0.4})`;
         ctx.lineWidth = 1;
         ctx.stroke();
       }
+
+      if (galaxy.shouldShowGlow()) {
+        // Enhanced glow for high-level civilizations
+        const glowTime = Date.now() * 0.002;
+        const glowPulse = 1 + 0.2 * Math.sin(glowTime);
+        
+        // Multi-layer glow
+        const outerGlowRadius = radius * 4 * glowPulse;
+        const midGlowRadius = radius * 2.5;
+        
+        // Outer glow
+        const outerGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, outerGlowRadius);
+        outerGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.12})`);
+        outerGlow.addColorStop(0.4, `rgba(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.9)}, ${alpha * 0.06})`);
+        outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.beginPath();
+        ctx.arc(sx, sy, outerGlowRadius, 0, Math.PI * 2);
+        ctx.fillStyle = outerGlow;
+        ctx.fill();
+
+        // Mid glow
+        const midGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, midGlowRadius);
+        midGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.2})`);
+        midGlow.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${alpha * 0.08})`);
+        midGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.beginPath();
+        ctx.arc(sx, sy, midGlowRadius, 0, Math.PI * 2);
+        ctx.fillStyle = midGlow;
+        ctx.fill();
+      }
+
+      // Core galaxy body with gradient
+      const coreGradient = ctx.createRadialGradient(
+        sx - radius * 0.3, sy - radius * 0.3, 0,
+        sx, sy, radius
+      );
+      coreGradient.addColorStop(0, `rgba(${Math.min(r + 50, 255)}, ${Math.min(g + 50, 255)}, ${Math.min(b + 50, 255)}, ${alpha * pulse})`);
+      coreGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * pulse})`);
+      coreGradient.addColorStop(1, `rgba(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.8)}, ${alpha * pulse * 0.8})`);
+      
+      ctx.beginPath();
+      ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = coreGradient;
+      ctx.fill();
+
+      // Spiral arms hint for high-level civs
+      if (level >= 7) {
+        this.drawSpiralArms(sx, sy, radius, [r, g, b], alpha, level);
+      }
+    }
+  }
+
+  private drawSpiralArms(sx: number, sy: number, radius: number, color: [number, number, number], alpha: number, level: number): void {
+    const ctx = this.ctx;
+    const armCount = 3 + Math.floor(level / 3);
+    const time = Date.now() * 0.0005;
+
+    for (let i = 0; i < armCount; i++) {
+      const angle = (i / armCount) * Math.PI * 2 + time;
+      const armLength = radius * (1.5 + level * 0.1);
+      
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(angle);
+
+      const armGradient = ctx.createLinearGradient(0, 0, armLength, 0);
+      armGradient.addColorStop(0, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha * 0.4})`);
+      armGradient.addColorStop(0.5, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha * 0.15})`);
+      armGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(
+        armLength * 0.5, Math.sin(time * 0.5) * 5,
+        armLength, Math.sin(time) * 8
+      );
+      ctx.lineTo(armLength, Math.sin(time) * 8 + 2);
+      ctx.quadraticCurveTo(
+        armLength * 0.5, Math.sin(time * 0.5) * 5 + 2,
+        0, 2
+      );
+      ctx.closePath();
+      ctx.fillStyle = armGradient;
+      ctx.fill();
+
+      ctx.restore();
     }
   }
 
@@ -353,37 +598,117 @@ export class Renderer {
     const [sx1, sy1] = this.camera.project(g1.x, g1.y, g1.z);
     const [sx2, sy2] = this.camera.project(g2.x, g2.y, g2.z);
 
+    const time = Date.now() * 0.002;
+    const dx = sx2 - sx1;
+    const dy = sy2 - sy1;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+
+    // Animated energy flow along the connection
+    const flowSpeed = 0.003;
+    const flowOffset = (time * flowSpeed) % 1;
+
+    // Draw glow behind the line
     ctx.beginPath();
-    ctx.setLineDash([6, 4]);
     ctx.moveTo(sx1, sy1);
     ctx.lineTo(sx2, sy2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(100, 150, 255, 0.15)';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
     ctx.stroke();
-    ctx.setLineDash([]);
 
-    const dist = g1.distanceTo(g2);
+    // Main dashed connection line with gradient effect
+    ctx.save();
+    ctx.translate(sx1, sy1);
+    ctx.rotate(angle);
+
+    // Draw multiple dash patterns for animated effect
+    const dashPattern = [8, 6];
+    const totalDash = dashPattern[0] + dashPattern[1];
+    const numDashes = Math.ceil(dist / totalDash);
+
+    for (let i = 0; i < numDashes; i++) {
+      const dashStart = i * totalDash + (flowOffset * totalDash);
+      if (dashStart > dist) break;
+
+      const gradient = ctx.createLinearGradient(dashStart, 0, dashStart + dashPattern[0], 0);
+      gradient.addColorStop(0, 'rgba(100, 180, 255, 0.2)');
+      gradient.addColorStop(0.5, 'rgba(150, 200, 255, 0.6)');
+      gradient.addColorStop(1, 'rgba(200, 220, 255, 0.3)');
+
+      ctx.beginPath();
+      ctx.moveTo(dashStart, 0);
+      ctx.lineTo(Math.min(dashStart + dashPattern[0], dist), 0);
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Endpoint highlights
+    const highlightPulse = 0.7 + 0.3 * Math.sin(time * 2);
+    
+    // Start point
+    const startGradient = ctx.createRadialGradient(sx1, sy1, 0, sx1, sy1, 6);
+    startGradient.addColorStop(0, `rgba(100, 200, 255, ${highlightPulse * 0.4})`);
+    startGradient.addColorStop(1, 'rgba(100, 200, 255, 0)');
+    ctx.beginPath();
+    ctx.arc(sx1, sy1, 6, 0, Math.PI * 2);
+    ctx.fillStyle = startGradient;
+    ctx.fill();
+
+    // End point
+    const endGradient = ctx.createRadialGradient(sx2, sy2, 0, sx2, sy2, 6);
+    endGradient.addColorStop(0, `rgba(100, 200, 255, ${highlightPulse * 0.4})`);
+    endGradient.addColorStop(1, 'rgba(100, 200, 255, 0)');
+    ctx.beginPath();
+    ctx.arc(sx2, sy2, 6, 0, Math.PI * 2);
+    ctx.fillStyle = endGradient;
+    ctx.fill();
+
+    // Distance label with enhanced styling
+    const actualDist = g1.distanceTo(g2);
     const mx = (sx1 + sx2) / 2;
     const my = (sy1 + sy2) / 2;
 
     let label: string;
-    if (dist >= 1_000_000) {
-      label = `${(dist / 1_000_000).toFixed(1)}M ly`;
-    } else if (dist >= 1_000) {
-      label = `${(dist / 1_000).toFixed(1)}K ly`;
+    if (actualDist >= 1_000_000) {
+      label = `${(actualDist / 1_000_000).toFixed(1)}M ly`;
+    } else if (actualDist >= 1_000) {
+      label = `${(actualDist / 1_000).toFixed(1)}K ly`;
     } else {
-      label = `${dist.toFixed(0)} ly`;
+      label = `${actualDist.toFixed(0)} ly`;
     }
 
-    ctx.font = '12px Courier New';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.textAlign = 'center';
-
+    ctx.font = '11px Courier New';
+    
+    // Label background with gradient
     const tw = ctx.measureText(label).width;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(mx - tw / 2 - 4, my - 8, tw + 8, 16);
-    ctx.fillStyle = '#fff';
+    const labelGradient = ctx.createLinearGradient(mx - tw / 2 - 6, my - 10, mx + tw / 2 + 6, my + 10);
+    labelGradient.addColorStop(0, 'rgba(20, 30, 50, 0.85)');
+    labelGradient.addColorStop(0.5, 'rgba(30, 50, 80, 0.9)');
+    labelGradient.addColorStop(1, 'rgba(20, 30, 50, 0.85)');
+    
+    ctx.fillStyle = labelGradient;
+    ctx.beginPath();
+    ctx.roundRect(mx - tw / 2 - 6, my - 10, tw + 12, 18, 4);
+    ctx.fill();
+
+    // Label border
+    ctx.strokeStyle = 'rgba(100, 180, 255, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(mx - tw / 2 - 6, my - 10, tw + 12, 18, 4);
+    ctx.stroke();
+
+    // Label text with glow
+    ctx.shadowColor = 'rgba(100, 180, 255, 0.8)';
+    ctx.shadowBlur = 4;
+    ctx.fillStyle = 'rgba(180, 220, 255, 0.95)';
+    ctx.textAlign = 'center';
     ctx.fillText(label, mx, my + 4);
+    ctx.shadowBlur = 0;
   }
 
   /** Find galaxy near screen position */
