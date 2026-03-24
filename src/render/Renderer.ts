@@ -36,17 +36,6 @@ interface StrikeEffect {
   duration: number;
 }
 
-/** Background star particle */
-interface StarParticle {
-  x: number;
-  y: number;
-  z: number;
-  size: number;
-  brightness: number;
-  twinkleSpeed: number;
-  twinkleOffset: number;
-}
-
 /** Broadcast warning effect for civilizations whose coordinates are exposed */
 interface BroadcastEffect {
   galaxy: Galaxy;
@@ -59,10 +48,6 @@ export class Renderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private camera: Camera;
-
-  // Background stars
-  private stars: StarParticle[] = [];
-  private backgroundInitialized = false;
 
   // Connection line state
   selectedGalaxies: Galaxy[] = [];
@@ -80,25 +65,6 @@ export class Renderer {
     this.ctx = canvas.getContext('2d')!;
     this.resize();
     window.addEventListener('resize', () => this.resize());
-    this.initBackground();
-  }
-
-  private initBackground(): void {
-    // Initialize background stars
-    this.stars = [];
-    for (let i = 0; i < 300; i++) {
-      this.stars.push({
-        x: Math.random() * 2 - 1,
-        y: Math.random() * 2 - 1,
-        z: Math.random() * 2 - 1,
-        size: 0.3 + Math.random() * 1.5,
-        brightness: 0.3 + Math.random() * 0.7,
-        twinkleSpeed: 0.02 + Math.random() * 0.05,
-        twinkleOffset: Math.random() * Math.PI * 2,
-      });
-    }
-
-    this.backgroundInitialized = true;
   }
 
   private resize(): void {
@@ -190,43 +156,6 @@ export class Renderer {
     gradient.addColorStop(1, '#020208');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
-
-    // Draw twinkling stars
-    this.drawStars(w, h);
-  }
-
-  private drawStars(w: number, h: number): void {
-    const { ctx } = this;
-    const time = Date.now() * 0.001;
-
-    for (const star of this.stars) {
-      // Draw stars in screen space, not affected by camera
-      // Use pre-computed screen positions based on star coordinates
-      const sx = (star.x * 0.5 + 0.5) * w;
-      const sy = (star.y * 0.5 + 0.5) * h;
-
-      // Twinkle effect
-      const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
-      const brightness = star.brightness * (0.7 + 0.3 * twinkle);
-
-      // Star glow
-      const glowRadius = star.size * (1.5 + twinkle * 0.5);
-      const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowRadius * 2);
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${brightness * 0.8})`);
-      gradient.addColorStop(0.4, `rgba(200, 220, 255, ${brightness * 0.3})`);
-      gradient.addColorStop(1, 'rgba(150, 180, 255, 0)');
-
-      ctx.beginPath();
-      ctx.arc(sx, sy, glowRadius * 2, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      // Star core
-      ctx.beginPath();
-      ctx.arc(sx, sy, star.size * 0.8, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
-      ctx.fill();
-    }
   }
 
   private drawGalaxy(galaxy: Galaxy, sx: number, sy: number, depth: number, universeRadius: number): void {
