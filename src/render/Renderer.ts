@@ -47,18 +47,6 @@ interface StarParticle {
   twinkleOffset: number;
 }
 
-/** Nebula cloud for background */
-interface NebulaCloud {
-  x: number;
-  y: number;
-  z: number;
-  radius: number;
-  color: [number, number, number];
-  alpha: number;
-  driftSpeed: number;
-  driftAngle: number;
-}
-
 /** Broadcast warning effect for civilizations whose coordinates are exposed */
 interface BroadcastEffect {
   galaxy: Galaxy;
@@ -72,9 +60,8 @@ export class Renderer {
   private ctx: CanvasRenderingContext2D;
   private camera: Camera;
 
-  // Background stars and nebula
+  // Background stars
   private stars: StarParticle[] = [];
-  private nebulae: NebulaCloud[] = [];
   private backgroundInitialized = false;
 
   // Connection line state
@@ -108,29 +95,6 @@ export class Renderer {
         brightness: 0.3 + Math.random() * 0.7,
         twinkleSpeed: 0.02 + Math.random() * 0.05,
         twinkleOffset: Math.random() * Math.PI * 2,
-      });
-    }
-
-    // Initialize nebula clouds
-    this.nebulae = [];
-    const nebulaColors: Array<[number, number, number]> = [
-      [100, 50, 200],   // Purple
-      [50, 100, 200],   // Blue
-      [200, 50, 150],   // Pink
-      [50, 200, 150],   // Teal
-      [200, 100, 50],   // Orange
-    ];
-    for (let i = 0; i < 5; i++) {
-      const color = nebulaColors[Math.floor(Math.random() * nebulaColors.length)];
-      this.nebulae.push({
-        x: (Math.random() - 0.5) * 1.5,
-        y: (Math.random() - 0.5) * 1.5,
-        z: (Math.random() - 0.5) * 1.5,
-        radius: 0.3 + Math.random() * 0.5,
-        color,
-        alpha: 0.03 + Math.random() * 0.05,
-        driftSpeed: 0.0001 + Math.random() * 0.0002,
-        driftAngle: Math.random() * Math.PI * 2,
       });
     }
 
@@ -227,9 +191,6 @@ export class Renderer {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Draw nebula clouds (behind stars)
-    this.drawNebulae(w, h);
-
     // Draw twinkling stars
     this.drawStars(w, h);
   }
@@ -267,37 +228,6 @@ export class Renderer {
       ctx.beginPath();
       ctx.arc(sx, sy, star.size * 0.8, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
-      ctx.fill();
-    }
-  }
-
-  private drawNebulae(w: number, h: number): void {
-    const { ctx } = this;
-
-    for (const nebula of this.nebulae) {
-      // Update nebula position (slow drift)
-      nebula.x += Math.cos(nebula.driftAngle) * nebula.driftSpeed;
-      nebula.y += Math.sin(nebula.driftAngle) * nebula.driftSpeed;
-
-      const [sx, sy] = this.camera.project(
-        nebula.x * this.camera.zoom * 800,
-        nebula.y * this.camera.zoom * 800,
-        nebula.z * this.camera.zoom * 800
-      );
-
-      const radius = nebula.radius * Math.min(w, h) * 0.8;
-
-      // Soft nebula gradient
-      const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
-      const [r, g, b] = nebula.color;
-      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${nebula.alpha * 1.5})`);
-      gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${nebula.alpha})`);
-      gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${nebula.alpha * 0.3})`);
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      ctx.beginPath();
-      ctx.arc(sx, sy, radius, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
       ctx.fill();
     }
   }
