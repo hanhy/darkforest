@@ -189,7 +189,7 @@ export class Renderer {
     const pulse = 0.95 + 0.1 * Math.sin(Date.now() * 0.003 + level * 0.5);
 
     // Check if zoomed in enough to show sprite detail
-    const zoomThreshold = 3; // Show sprite when zoom >= 3
+    const zoomThreshold = 4.5; // Keep mid-range zoom cleaner before switching to sprites
     const showSprite = this.camera.zoom >= zoomThreshold && level >= 1;
 
     if (showSprite) {
